@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TonalPlan</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -31,7 +32,9 @@
     /* ── Header ── */
     .header {
       text-align: center;
-      margin-bottom: 2rem;
+      margin-bottom: 1.25rem;
+      width: 100%;
+      max-width: 620px;
     }
     .logo {
       font-size: 0.7rem;
@@ -45,37 +48,49 @@
       font-weight: 700;
       letter-spacing: -0.02em;
     }
-    .header p {
-      font-size: 0.85rem;
-      color: var(--muted);
-      margin-top: 0.3rem;
-    }
+    .header p { font-size: 0.85rem; color: var(--muted); margin-top: 0.3rem; }
 
-    /* ── Tabs ── */
-    .tabs {
+    /* ── Account bar ── */
+    .account-bar {
+      width: 100%;
+      max-width: 620px;
       display: flex;
-      gap: 0.5rem;
-      margin-bottom: 2rem;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 0.3rem;
+      padding: 0.6rem 0.9rem;
+      margin-bottom: 1.5rem;
+      font-size: 0.8rem;
+    }
+    .account-left { display: flex; align-items: center; gap: 0.6rem; min-width: 0; }
+    .account-email { color: #bbb; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sync-status { display: inline-flex; align-items: center; gap: 0.35rem; color: var(--muted); white-space: nowrap; }
+    .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dim); }
+    .sync-dot.saving { background: #f5b301; }
+    .sync-dot.synced { background: var(--accent); }
+    .sync-dot.offline { background: #888; }
+    .sync-dot.error  { background: #ff4444; }
+    .signout-btn {
+      background: transparent; border: 1px solid var(--border); color: var(--muted);
+      border-radius: 8px; padding: 0.35rem 0.7rem; font-size: 0.75rem; cursor: pointer;
+      white-space: nowrap;
+    }
+    .signout-btn:hover { color: var(--text); border-color: #444; }
+
+    /* ── Tabs ── */
+    .tabs {
+      display: flex; gap: 0.5rem; margin-bottom: 2rem;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 0.3rem;
     }
     .tab {
-      padding: 0.55rem 1.4rem;
-      border-radius: 9px;
-      font-size: 0.85rem;
-      font-weight: 500;
-      cursor: pointer;
-      border: none;
-      background: transparent;
-      color: var(--muted);
-      transition: all 0.15s;
+      padding: 0.55rem 1.4rem; border-radius: 9px; font-size: 0.85rem; font-weight: 500;
+      cursor: pointer; border: none; background: transparent; color: var(--muted); transition: all 0.15s;
     }
-    .tab.active {
-      background: var(--accent);
-      color: #000;
-    }
+    .tab.active { background: var(--accent); color: #000; }
 
     /* ── Views ── */
     .view { display: none; width: 100%; max-width: 620px; }
@@ -83,44 +98,23 @@
 
     /* ── Card ── */
     .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 1.75rem;
-      margin-bottom: 1rem;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 1.75rem; margin-bottom: 1rem;
     }
     .card-title {
-      font-size: 0.7rem;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 1.25rem;
+      font-size: 0.7rem; letter-spacing: 0.15em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 1.25rem;
     }
 
     /* ── Form elements ── */
     label {
-      display: block;
-      font-size: 0.75rem;
-      color: var(--muted);
-      margin-bottom: 0.35rem;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
+      display: block; font-size: 0.75rem; color: var(--muted); margin-bottom: 0.35rem;
+      letter-spacing: 0.05em; text-transform: uppercase;
     }
-    input[type="text"],
-    input[type="number"],
-    select {
-      width: 100%;
-      background: #111;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      color: var(--text);
-      font-size: 1rem;
-      padding: 0.65rem 0.9rem;
-      outline: none;
-      transition: border-color 0.15s;
-      margin-bottom: 1rem;
-      -moz-appearance: textfield;
-      appearance: none;
+    input[type="text"], input[type="email"], input[type="password"], input[type="number"], select {
+      width: 100%; background: #111; border: 1px solid var(--border); border-radius: 10px;
+      color: var(--text); font-size: 1rem; padding: 0.65rem 0.9rem; outline: none;
+      transition: border-color 0.15s; margin-bottom: 1rem; -moz-appearance: textfield; appearance: none;
     }
     input[type="number"]::-webkit-outer-spin-button,
     input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
@@ -131,239 +125,359 @@
     .row-2 input { margin-bottom: 0; }
 
     .btn {
-      width: 100%;
-      padding: 0.75rem;
-      border-radius: 10px;
-      border: none;
-      font-size: 0.9rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: opacity 0.15s;
+      width: 100%; padding: 0.75rem; border-radius: 10px; border: none;
+      font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: opacity 0.15s;
     }
     .btn:hover { opacity: 0.85; }
     .btn-primary { background: var(--accent); color: #000; }
-    .btn-ghost {
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--muted);
-      margin-top: 0.5rem;
-    }
+    .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); margin-top: 0.5rem; }
 
     /* ── Convert result ── */
     .result-block {
-      background: #111;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1.25rem 1.5rem;
-      margin-top: 1.25rem;
+      background: #111; border: 1px solid var(--border); border-radius: 12px;
+      padding: 1.25rem 1.5rem; margin-top: 1.25rem;
     }
     .result-label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.3rem; }
     .result-val { font-size: 2.8rem; font-weight: 700; color: var(--accent); letter-spacing: -0.03em; line-height: 1; }
     .result-unit { font-size: 0.85rem; color: var(--muted); margin-top: 0.2rem; }
-    .result-meta {
-      display: flex;
-      gap: 0.5rem;
-      margin-top: 0.9rem;
-      flex-wrap: wrap;
-    }
+    .result-meta { display: flex; gap: 0.5rem; margin-top: 0.9rem; flex-wrap: wrap; }
     .badge {
-      background: #1e1e1e;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 0.25rem 0.55rem;
-      font-size: 0.72rem;
-      color: #888;
+      background: #1e1e1e; border: 1px solid var(--border); border-radius: 6px;
+      padding: 0.25rem 0.55rem; font-size: 0.72rem; color: #888;
     }
     .badge span { color: #bbb; font-weight: 600; }
 
-    /* ── Exercise table ── */
+    /* ── Exercise list ── */
     .ex-list { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 0.5rem; }
     .ex-row {
-      background: #111;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 0.85rem 1rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
+      background: #111; border: 1px solid var(--border); border-radius: 10px; padding: 0.85rem 1rem;
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
     }
     .ex-name { font-size: 0.95rem; font-weight: 500; flex: 1; }
-    .ex-mult {
-      font-size: 0.85rem;
-      color: var(--accent);
-      font-weight: 600;
-      white-space: nowrap;
-    }
+    .ex-mult { font-size: 0.85rem; color: var(--accent); font-weight: 600; white-space: nowrap; }
     .ex-count { font-size: 0.72rem; color: var(--dim); white-space: nowrap; }
     .ex-delete {
-      background: none;
-      border: none;
-      color: var(--dim);
-      cursor: pointer;
-      font-size: 1rem;
-      padding: 0 0.2rem;
-      transition: color 0.15s;
+      background: none; border: none; color: var(--dim); cursor: pointer;
+      font-size: 1rem; padding: 0 0.2rem; transition: color 0.15s;
     }
     .ex-delete:hover { color: #ff4444; }
 
-    .empty {
-      text-align: center;
-      color: var(--dim);
-      font-size: 0.85rem;
-      padding: 2rem 0;
-    }
+    .empty { text-align: center; color: var(--dim); font-size: 0.85rem; padding: 2rem 0; }
 
-    /* ── Datalist suggestion style ── */
     datalist { display: none; }
 
-    .footnote {
-      font-size: 0.72rem;
-      color: var(--dim);
-      text-align: center;
-      margin-top: 1.5rem;
-      line-height: 1.6;
-    }
+    .footnote { font-size: 0.72rem; color: var(--dim); text-align: center; margin-top: 1.5rem; line-height: 1.6; }
     .footnote a { color: #555; text-decoration: underline; }
 
-    /* ── Entries modal-ish expand ── */
     .entries-wrap { margin-top: 0.5rem; display: none; }
     .entries-wrap.open { display: block; }
     .entry-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0.45rem 0;
-      border-bottom: 1px solid var(--border);
-      font-size: 0.8rem;
-      color: #aaa;
+      display: flex; justify-content: space-between; align-items: center; padding: 0.45rem 0;
+      border-bottom: 1px solid var(--border); font-size: 0.8rem; color: #aaa;
     }
     .entry-item:last-child { border-bottom: none; }
-    .entry-del {
-      background: none; border: none; color: var(--dim);
-      cursor: pointer; font-size: 0.85rem;
-    }
+    .entry-del { background: none; border: none; color: var(--dim); cursor: pointer; font-size: 0.85rem; }
     .entry-del:hover { color: #ff4444; }
+
+    /* ── Login screen ── */
+    .login-screen { width: 100%; max-width: 400px; margin-top: 3rem; }
+    .login-screen .card { padding: 2rem; }
+    .auth-btns { display: flex; gap: 0.75rem; margin-top: 0.5rem; }
+    .auth-btns .btn { margin-top: 0; }
+    .auth-error {
+      display: none; margin-top: 1rem; padding: 0.65rem 0.9rem; border-radius: 8px;
+      background: #2a1414; border: 1px solid #5a2020; color: #ff9a9a; font-size: 0.8rem; line-height: 1.4;
+    }
+    .auth-error.info { background: #14231a; border-color: #245a2f; color: #a9ffbf; }
+    .auth-error.show { display: block; }
   </style>
 </head>
 <body>
 
-  <div class="header">
-    <p class="logo">TonalPlan</p>
-    <h1>Weight Converter</h1>
-    <p>Your personal Tonal ↔ free weight tracker</p>
-  </div>
-
-  <div class="tabs">
-    <button class="tab active" onclick="switchTab('convert')">Convert</button>
-    <button class="tab" onclick="switchTab('log')">My Lifts</button>
-  </div>
-
-  <!-- ══ CONVERT VIEW ══ -->
-  <div class="view active" id="view-convert">
+  <!-- ══ LOGIN SCREEN ══ -->
+  <div class="login-screen" id="login-screen" style="display:none">
+    <div class="header">
+      <p class="logo">TonalPlan</p>
+      <h1>Weight Converter</h1>
+      <p>Sign in to sync your lifts across devices</p>
+    </div>
     <div class="card">
-      <p class="card-title">Convert weight</p>
+      <label>Email</label>
+      <input type="email" id="auth-email" placeholder="you@example.com" autocomplete="email" />
 
-      <label>Exercise</label>
-      <select id="conv-exercise" onchange="clearResult()">
-        <option value="__study__">— Use study formula (no exercise selected) —</option>
-      </select>
+      <label>Password</label>
+      <input type="password" id="auth-password" placeholder="••••••••" autocomplete="current-password" />
 
-      <label>Direction</label>
-      <select id="conv-direction" onchange="clearResult()">
-        <option value="tonal-to-free">Tonal → Free weight</option>
-        <option value="free-to-tonal">Free weight → Tonal</option>
-      </select>
+      <div class="auth-btns">
+        <button class="btn btn-primary" onclick="doSignIn()">Sign in</button>
+        <button class="btn btn-ghost" style="margin:0;" onclick="doSignUp()">Sign up</button>
+      </div>
 
-      <label id="conv-input-label">Tonal weight (lbs)</label>
-      <input type="number" id="conv-weight" placeholder="e.g. 80" min="0" oninput="clearResult()" />
+      <div class="auth-error" id="auth-error"></div>
+    </div>
+  </div>
 
-      <button class="btn btn-primary" onclick="doConvert()">Convert</button>
+  <!-- ══ APP ══ -->
+  <div id="app" style="display:none; width:100%; display:flex; flex-direction:column; align-items:center;">
 
-      <div class="result-block" id="result-block" style="display:none">
-        <p class="result-label" id="result-label">Free weight equivalent</p>
-        <div class="result-val" id="result-val">—</div>
-        <div class="result-unit">lbs</div>
-        <div class="result-meta">
-          <span class="badge">Multiplier: <span id="result-mult">—</span></span>
-          <span class="badge" id="result-source-badge">Source: <span id="result-source">—</span></span>
+    <div class="header">
+      <p class="logo">TonalPlan</p>
+      <h1>Weight Converter</h1>
+      <p>Your personal Tonal ↔ free weight tracker</p>
+    </div>
+
+    <div class="account-bar">
+      <div class="account-left">
+        <span class="account-email" id="account-email">—</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:0.75rem;">
+        <span class="sync-status"><span class="sync-dot" id="sync-dot"></span><span id="sync-label">Synced</span></span>
+        <button class="signout-btn" onclick="doSignOut()">Sign out</button>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('convert')">Convert</button>
+      <button class="tab" onclick="switchTab('log')">My Lifts</button>
+    </div>
+
+    <!-- ══ CONVERT VIEW ══ -->
+    <div class="view active" id="view-convert">
+      <div class="card">
+        <p class="card-title">Convert weight</p>
+
+        <label>Exercise</label>
+        <select id="conv-exercise" onchange="clearResult()">
+          <option value="__study__">— Use study formula (no exercise selected) —</option>
+        </select>
+
+        <label>Direction</label>
+        <select id="conv-direction" onchange="clearResult()">
+          <option value="tonal-to-free">Tonal → Free weight</option>
+          <option value="free-to-tonal">Free weight → Tonal</option>
+        </select>
+
+        <label id="conv-input-label">Tonal weight (lbs)</label>
+        <input type="number" id="conv-weight" placeholder="e.g. 80" min="0" oninput="clearResult()" />
+
+        <button class="btn btn-primary" onclick="doConvert()">Convert</button>
+
+        <div class="result-block" id="result-block" style="display:none">
+          <p class="result-label" id="result-label">Free weight equivalent</p>
+          <div class="result-val" id="result-val">—</div>
+          <div class="result-unit">lbs</div>
+          <div class="result-meta">
+            <span class="badge">Multiplier: <span id="result-mult">—</span></span>
+            <span class="badge" id="result-source-badge">Source: <span id="result-source">—</span></span>
+          </div>
+        </div>
+      </div>
+
+      <p class="footnote">
+        Exercises you haven't logged use the
+        <a href="https://tonal.com/blogs/all/study-shows-tonal-weight-may-feel-heavier" target="_blank">
+          High Point University study
+        </a>
+        formula as a starting estimate (×1.16–1.31, scaling with weight).
+      </p>
+    </div>
+
+    <!-- ══ LOG VIEW ══ -->
+    <div class="view" id="view-log">
+      <div class="card">
+        <p class="card-title">Log a data point</p>
+
+        <label>Exercise name</label>
+        <input type="text" id="log-exercise" list="ex-suggestions" placeholder="e.g. Upright Row" autocomplete="off" />
+        <datalist id="ex-suggestions"></datalist>
+
+        <div class="row-2">
+          <div>
+            <label>Tonal weight (lbs)</label>
+            <input type="number" id="log-tonal" placeholder="e.g. 20" min="0" />
+          </div>
+          <div>
+            <label>Free weight felt equiv. (lbs)</label>
+            <input type="number" id="log-free" placeholder="e.g. 55" min="0" />
+          </div>
+        </div>
+
+        <button class="btn btn-primary" onclick="logEntry()">Save data point</button>
+      </div>
+
+      <div class="card">
+        <p class="card-title">Your exercises</p>
+        <div class="ex-list" id="ex-list">
+          <p class="empty">No exercises logged yet. Add your first one above.</p>
         </div>
       </div>
     </div>
 
-    <p class="footnote">
-      Exercises you haven't logged use the
-      <a href="https://tonal.com/blogs/all/study-shows-tonal-weight-may-feel-heavier" target="_blank">
-        High Point University study
-      </a>
-      formula as a starting estimate (×1.16–1.31, scaling with weight).
-    </p>
-  </div>
-
-  <!-- ══ LOG VIEW ══ -->
-  <div class="view" id="view-log">
-    <div class="card">
-      <p class="card-title">Log a data point</p>
-
-      <label>Exercise name</label>
-      <input type="text" id="log-exercise" list="ex-suggestions" placeholder="e.g. Upright Row" autocomplete="off" />
-      <datalist id="ex-suggestions"></datalist>
-
-      <div class="row-2">
-        <div>
-          <label>Tonal weight (lbs)</label>
-          <input type="number" id="log-tonal" placeholder="e.g. 20" min="0" />
-        </div>
-        <div>
-          <label>Free weight felt equiv. (lbs)</label>
-          <input type="number" id="log-free" placeholder="e.g. 55" min="0" />
-        </div>
-      </div>
-
-      <button class="btn btn-primary" onclick="logEntry()">Save data point</button>
-    </div>
-
-    <div class="card">
-      <p class="card-title">Your exercises</p>
-      <div class="ex-list" id="ex-list">
-        <p class="empty">No exercises logged yet. Add your first one above.</p>
-      </div>
-    </div>
   </div>
 
   <script>
-    // ── Storage ──────────────────────────────────────────────
-    // Shape: { "Upright Row": [{tonal: 20, free: 55}, ...], ... }
-    function getData() {
-      try { return JSON.parse(localStorage.getItem('tonalplan') || '{}'); }
-      catch { return {}; }
-    }
-    function saveData(d) {
-      localStorage.setItem('tonalplan', JSON.stringify(d));
+    // ══ Supabase client ══════════════════════════════════════
+    const SUPABASE_URL = 'https://ddwkqybabxgmmaggybeh.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_h_h1tEqA26pZTaOlx_GZow_glMr7i4K';
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // ══ App state ════════════════════════════════════════════
+    // state.data shape: { "Upright Row": [{tonal, free}], ... }
+    const state = { user: null, data: {} };
+
+    const blankData = () => ({});
+    const cacheKey = () => 'tonalplan_cache_' + state.user.id;
+
+    // Keep only valid exercise entries (defends against foreign data shapes)
+    function normalize(d) {
+      const out = {};
+      if (d && typeof d === 'object' && !Array.isArray(d)) {
+        for (const [k, v] of Object.entries(d)) {
+          if (Array.isArray(v) && v.length &&
+              v.every(e => e && typeof e.tonal === 'number' && typeof e.free === 'number')) {
+            out[k] = v;
+          }
+        }
+      }
+      return out;
     }
 
-    // ── Study formula fallback ────────────────────────────────
-    function studyToFree(tonal) {
-      if (tonal <= 0) return 0;
-      return tonal * (1.12 + 0.000977 * tonal);
+    // ══ Auth ═════════════════════════════════════════════════
+    function showAuthError(msg, info) {
+      const el = document.getElementById('auth-error');
+      el.textContent = msg;
+      el.classList.toggle('info', !!info);
+      el.classList.add('show');
     }
-    function studyToTonal(free) {
-      if (free <= 0) return 0;
-      return (-1.12 + Math.sqrt(1.2544 + 0.003908 * free)) / 0.001954;
+    function clearAuthError() {
+      document.getElementById('auth-error').classList.remove('show');
     }
 
-    // ── Multiplier for an exercise ────────────────────────────
+    async function doSignUp() {
+      clearAuthError();
+      const email = document.getElementById('auth-email').value.trim();
+      const pw = document.getElementById('auth-password').value;
+      if (!email || !pw) return showAuthError('Enter an email and password.');
+      const { data, error } = await sb.auth.signUp({ email, password: pw });
+      if (error) return showAuthError(error.message);
+      if (!data.session) {
+        showAuthError('Account created — check your email to confirm, then sign in.', true);
+      }
+      // If a session exists, onAuthStateChange reveals the app automatically.
+    }
+
+    async function doSignIn() {
+      clearAuthError();
+      const email = document.getElementById('auth-email').value.trim();
+      const pw = document.getElementById('auth-password').value;
+      if (!email || !pw) return showAuthError('Enter an email and password.');
+      const { error } = await sb.auth.signInWithPassword({ email, password: pw });
+      if (error) return showAuthError(error.message);
+    }
+
+    async function doSignOut() { await sb.auth.signOut(); }
+
+    // Session-driven boot: shows app when signed in, login when signed out.
+    sb.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user) {
+        state.user = session.user;
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('app').style.display = 'flex';
+        document.getElementById('account-email').textContent = session.user.email;
+        await hydrateFromCloud();
+      } else {
+        state.user = null;
+        state.data = {};
+        document.getElementById('app').style.display = 'none';
+        document.getElementById('login-screen').style.display = 'block';
+      }
+    });
+
+    // ══ Data layer (cloud + offline cache) ═══════════════════
+    function getData() { return state.data; }
+
+    async function hydrateFromCloud() {
+      // 1) instant paint from cache
+      try { state.data = normalize(JSON.parse(localStorage.getItem(cacheKey()))); }
+      catch { state.data = blankData(); }
+      refreshAll();
+
+      // 2) fetch authoritative copy
+      const { data, error } = await sb.from('user_data')
+        .select('data, updated_at').eq('user_id', state.user.id).single();
+      if (!error && data) {
+        state.data = normalize(data.data);
+        localStorage.setItem(cacheKey(), JSON.stringify(state.data));
+        refreshAll();
+        setSyncStatus('synced');
+      } else if (error) {
+        setSyncStatus('error');
+      }
+
+      await maybeMigrateLocalData();
+    }
+
+    let saveTimer = null;
+    function saveData() {
+      if (!state.user) return;
+      localStorage.setItem(cacheKey(), JSON.stringify(state.data));  // cache immediately
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(pushToCloud, 800);                      // debounce network writes
+      setSyncStatus('saving');
+    }
+
+    async function pushToCloud() {
+      if (!state.user) return;
+      if (!navigator.onLine) { setSyncStatus('offline'); return; }
+      const { error } = await sb.from('user_data')
+        .upsert({ user_id: state.user.id, data: state.data, updated_at: new Date().toISOString() });
+      setSyncStatus(error ? 'error' : 'synced');
+    }
+    window.addEventListener('online', pushToCloud);
+
+    // One-time import of pre-account (Phase 2) local data
+    async function maybeMigrateLocalData() {
+      if (Object.keys(state.data).length) return;   // account already has data
+      let legacy = null;
+      try { legacy = normalize(JSON.parse(localStorage.getItem('tonalplan'))); } catch {}
+      if (legacy && Object.keys(legacy).length &&
+          confirm('Import your existing local TonalPlan data into this account?')) {
+        state.data = legacy;
+        refreshAll();
+        saveData();
+      }
+    }
+
+    // ══ Sync status indicator ════════════════════════════════
+    function setSyncStatus(status) {
+      const dot = document.getElementById('sync-dot');
+      const label = document.getElementById('sync-label');
+      if (!dot) return;
+      dot.className = 'sync-dot ' + status;
+      label.textContent = {
+        saving: 'Saving…', synced: 'Synced', offline: 'Offline', error: 'Sync error'
+      }[status] || '';
+    }
+
+    // ══ Conversion math (unchanged) ══════════════════════════
+    function studyToFree(tonal) { if (tonal <= 0) return 0; return tonal * (1.12 + 0.000977 * tonal); }
+    function studyToTonal(free) { if (free <= 0) return 0; return (-1.12 + Math.sqrt(1.2544 + 0.003908 * free)) / 0.001954; }
+
     function getMultiplier(exName) {
-      const d = getData();
-      const entries = d[exName];
+      const entries = state.data[exName];
       if (!entries || entries.length === 0) return null;
-      const avg = entries.reduce((sum, e) => sum + e.free / e.tonal, 0) / entries.length;
-      return avg;
+      return entries.reduce((sum, e) => sum + e.free / e.tonal, 0) / entries.length;
     }
 
     function fmt(val) { return Math.round(val * 10) / 10; }
 
-    // ── Tab switching ─────────────────────────────────────────
+    // ══ UI ═══════════════════════════════════════════════════
+    function refreshAll() {
+      populateConvertSelect();
+      updateSuggestions();
+      renderList();
+    }
+
     function switchTab(name) {
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -373,13 +487,11 @@
       if (name === 'convert') populateConvertSelect();
     }
 
-    // ── Populate exercise select in Convert ───────────────────
     function populateConvertSelect() {
       const sel = document.getElementById('conv-exercise');
       const prev = sel.value;
       sel.innerHTML = '<option value="__study__">— Use study formula (no exercise selected) —</option>';
-      const d = getData();
-      Object.keys(d).sort().forEach(name => {
+      Object.keys(state.data).sort().forEach(name => {
         const opt = document.createElement('option');
         opt.value = name;
         opt.textContent = name + ' (×' + getMultiplier(name).toFixed(2) + ')';
@@ -388,48 +500,27 @@
       if (prev && sel.querySelector(`option[value="${CSS.escape(prev)}"]`)) sel.value = prev;
     }
 
-    // ── Update input label based on direction ─────────────────
-    document.getElementById('conv-direction').addEventListener('change', function() {
-      const label = document.getElementById('conv-input-label');
-      label.textContent = this.value === 'tonal-to-free'
-        ? 'Tonal weight (lbs)'
-        : 'Free weight (lbs)';
+    document.getElementById('conv-direction').addEventListener('change', function () {
+      document.getElementById('conv-input-label').textContent =
+        this.value === 'tonal-to-free' ? 'Tonal weight (lbs)' : 'Free weight (lbs)';
       clearResult();
     });
 
-    // ── Convert ───────────────────────────────────────────────
     function doConvert() {
       const exKey = document.getElementById('conv-exercise').value;
       const dir = document.getElementById('conv-direction').value;
       const weight = parseFloat(document.getElementById('conv-weight').value);
-
-      if (isNaN(weight) || weight <= 0) {
-        alert('Please enter a valid weight.');
-        return;
-      }
+      if (isNaN(weight) || weight <= 0) { alert('Please enter a valid weight.'); return; }
 
       let result, mult, source;
-
       if (exKey === '__study__') {
-        if (dir === 'tonal-to-free') {
-          result = studyToFree(weight);
-          mult = result / weight;
-        } else {
-          result = studyToTonal(weight);
-          mult = weight / result;
-        }
+        if (dir === 'tonal-to-free') { result = studyToFree(weight); mult = result / weight; }
+        else { result = studyToTonal(weight); mult = weight / result; }
         source = 'HPU study formula';
       } else {
         mult = getMultiplier(exKey);
-        if (!mult) {
-          alert('No data found for that exercise.');
-          return;
-        }
-        if (dir === 'tonal-to-free') {
-          result = weight * mult;
-        } else {
-          result = weight / mult;
-        }
+        if (!mult) { alert('No data found for that exercise.'); return; }
+        result = dir === 'tonal-to-free' ? weight * mult : weight / mult;
         source = 'Your data';
       }
 
@@ -441,55 +532,43 @@
       document.getElementById('result-block').style.display = 'block';
     }
 
-    function clearResult() {
-      document.getElementById('result-block').style.display = 'none';
-    }
+    function clearResult() { document.getElementById('result-block').style.display = 'none'; }
 
-    // ── Log entry ─────────────────────────────────────────────
     function logEntry() {
       const name = document.getElementById('log-exercise').value.trim();
       const tonal = parseFloat(document.getElementById('log-tonal').value);
       const free = parseFloat(document.getElementById('log-free').value);
-
       if (!name) { alert('Please enter an exercise name.'); return; }
       if (isNaN(tonal) || tonal <= 0) { alert('Please enter a valid Tonal weight.'); return; }
       if (isNaN(free) || free <= 0) { alert('Please enter a valid free weight.'); return; }
 
-      const d = getData();
-      if (!d[name]) d[name] = [];
-      d[name].push({ tonal, free });
-      saveData(d);
+      if (!state.data[name]) state.data[name] = [];
+      state.data[name].push({ tonal, free });
+      saveData();
 
       document.getElementById('log-exercise').value = '';
       document.getElementById('log-tonal').value = '';
       document.getElementById('log-free').value = '';
 
-      updateSuggestions();
-      renderList();
-      populateConvertSelect();
+      refreshAll();
     }
 
-    // ── Render exercise list ──────────────────────────────────
     function renderList() {
-      const d = getData();
       const container = document.getElementById('ex-list');
-      const names = Object.keys(d).sort();
-
+      const names = Object.keys(state.data).sort();
       if (names.length === 0) {
         container.innerHTML = '<p class="empty">No exercises logged yet. Add your first one above.</p>';
         return;
       }
-
       container.innerHTML = names.map(name => {
-        const entries = d[name];
+        const entries = state.data[name];
         const mult = getMultiplier(name);
         const entriesHtml = entries.map((e, i) =>
           `<div class="entry-item">
-            <span>${e.tonal} lbs Tonal → ${e.free} lbs free (×${(e.free/e.tonal).toFixed(2)})</span>
+            <span>${e.tonal} lbs Tonal → ${e.free} lbs free (×${(e.free / e.tonal).toFixed(2)})</span>
             <button class="entry-del" onclick="deleteEntry('${esc(name)}', ${i})">✕</button>
           </div>`
         ).join('');
-
         return `
           <div class="ex-row" style="flex-direction:column; align-items:stretch; gap:0.5rem;">
             <div style="display:flex; align-items:center; justify-content:space-between; gap:1rem;">
@@ -506,49 +585,32 @@
       }).join('');
     }
 
-    function toggleEntries(id) {
-      const el = document.getElementById(id);
-      if (el) el.classList.toggle('open');
-    }
+    function toggleEntries(id) { const el = document.getElementById(id); if (el) el.classList.toggle('open'); }
 
     function deleteEntry(name, index) {
       if (!confirm('Delete this data point?')) return;
-      const d = getData();
-      if (!d[name]) return;
-      d[name].splice(index, 1);
-      if (d[name].length === 0) delete d[name];
-      saveData(d);
-      updateSuggestions();
-      renderList();
-      populateConvertSelect();
+      if (!state.data[name]) return;
+      state.data[name].splice(index, 1);
+      if (state.data[name].length === 0) delete state.data[name];
+      saveData();
+      refreshAll();
     }
 
     function deleteExercise(name) {
       if (!confirm(`Delete all data for "${name}"?`)) return;
-      const d = getData();
-      delete d[name];
-      saveData(d);
-      updateSuggestions();
-      renderList();
-      populateConvertSelect();
+      delete state.data[name];
+      saveData();
+      refreshAll();
     }
 
     function esc(str) {
-      return str.replace(/['"&<>]/g, c => ({'\'':'&#39;','"':'&quot;','&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+      return str.replace(/['"&<>]/g, c => ({ '\'': '&#39;', '"': '&quot;', '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
     }
 
-    // ── Datalist suggestions ──────────────────────────────────
     function updateSuggestions() {
       const dl = document.getElementById('ex-suggestions');
-      const d = getData();
-      dl.innerHTML = Object.keys(d).sort().map(n =>
-        `<option value="${esc(n)}">`
-      ).join('');
+      dl.innerHTML = Object.keys(state.data).sort().map(n => `<option value="${esc(n)}">`).join('');
     }
-
-    // ── Init ──────────────────────────────────────────────────
-    populateConvertSelect();
-    updateSuggestions();
   </script>
 
 </body>
