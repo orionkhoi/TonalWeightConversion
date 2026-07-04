@@ -436,7 +436,16 @@
       if (error) return showAuthError(error.message);
     }
 
-    async function doSignOut() { await sb.auth.signOut(); }
+    async function doSignOut() {
+      clearTimeout(saveTimer);                      // drop any pending cloud write
+      try { await sb.auth.signOut({ scope: 'local' }); } catch (e) { /* clear locally regardless */ }
+      // Force the UI back to login even if the auth event is delayed or errored.
+      state.user = null;
+      state.data = {};
+      document.getElementById('app').style.display = 'none';
+      document.getElementById('login-screen').style.display = 'block';
+      showAuthMode('choice');
+    }
 
     // Session-driven boot: shows app when signed in, login when signed out.
     sb.auth.onAuthStateChange(async (_event, session) => {
