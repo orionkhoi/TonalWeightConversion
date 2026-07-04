@@ -209,26 +209,52 @@
     <div class="header">
       <p class="logo">TonalPlan</p>
       <h1>Weight Converter</h1>
-      <p>Sign in to sync your lifts across devices</p>
+      <p>Sync your lifts across devices</p>
     </div>
     <div class="card">
-      <label>Email</label>
-      <input type="email" id="auth-email" placeholder="you@example.com" autocomplete="email" />
 
-      <label>Password</label>
-      <div class="pw-wrap">
-        <input type="password" id="auth-password" placeholder="••••••••" autocomplete="current-password" />
-        <button type="button" class="pw-toggle" id="pw-toggle" onclick="togglePw()">Show</button>
+      <!-- Choice -->
+      <div id="auth-choice">
+        <p style="color:var(--muted); font-size:0.85rem; text-align:center; margin-bottom:1.25rem;">
+          Sign in to your account, or create a new one.
+        </p>
+        <button class="btn btn-primary" onclick="showAuthMode('signin')">Sign in</button>
+        <button class="btn btn-ghost" onclick="showAuthMode('signup')">Sign up</button>
       </div>
 
-      <label>Confirm password <span style="text-transform:none; letter-spacing:0; color:var(--dim)">(sign up only)</span></label>
-      <div class="pw-wrap">
-        <input type="password" id="auth-password2" placeholder="••••••••" autocomplete="new-password" />
-      </div>
+      <!-- Sign in -->
+      <div id="auth-signin" style="display:none">
+        <label>Email</label>
+        <input type="email" id="signin-email" placeholder="you@example.com" autocomplete="email" />
 
-      <div class="auth-btns">
+        <label>Password</label>
+        <div class="pw-wrap">
+          <input type="password" id="signin-password" placeholder="••••••••" autocomplete="current-password" />
+          <button type="button" class="pw-toggle" id="signin-pw-toggle" onclick="togglePw('signin-pw-toggle','signin-password')">Show</button>
+        </div>
+
         <button class="btn btn-primary" onclick="doSignIn()">Sign in</button>
-        <button class="btn btn-ghost" style="margin:0;" onclick="doSignUp()">Sign up</button>
+        <button class="btn btn-ghost" onclick="showAuthMode('choice')">← Back</button>
+      </div>
+
+      <!-- Sign up -->
+      <div id="auth-signup" style="display:none">
+        <label>Email</label>
+        <input type="email" id="signup-email" placeholder="you@example.com" autocomplete="email" />
+
+        <label>Password</label>
+        <div class="pw-wrap">
+          <input type="password" id="signup-password" placeholder="••••••••" autocomplete="new-password" />
+          <button type="button" class="pw-toggle" id="signup-pw-toggle" onclick="togglePw('signup-pw-toggle','signup-password','signup-password2')">Show</button>
+        </div>
+
+        <label>Confirm password</label>
+        <div class="pw-wrap">
+          <input type="password" id="signup-password2" placeholder="••••••••" autocomplete="new-password" />
+        </div>
+
+        <button class="btn btn-primary" onclick="doSignUp()">Create account</button>
+        <button class="btn btn-ghost" onclick="showAuthMode('choice')">← Back</button>
       </div>
 
       <div class="auth-error" id="auth-error"></div>
@@ -371,9 +397,16 @@
       document.getElementById('auth-error').classList.remove('show');
     }
 
-    function togglePw() {
-      const fields = [document.getElementById('auth-password'), document.getElementById('auth-password2')];
-      const btn = document.getElementById('pw-toggle');
+    function showAuthMode(mode) {
+      clearAuthError();
+      ['choice', 'signin', 'signup'].forEach(m => {
+        document.getElementById('auth-' + m).style.display = (m === mode) ? 'block' : 'none';
+      });
+    }
+
+    function togglePw(btnId, ...fieldIds) {
+      const btn = document.getElementById(btnId);
+      const fields = fieldIds.map(id => document.getElementById(id)).filter(Boolean);
       const show = fields[0].type === 'password';
       fields.forEach(f => f.type = show ? 'text' : 'password');
       btn.textContent = show ? 'Hide' : 'Show';
@@ -381,9 +414,9 @@
 
     async function doSignUp() {
       clearAuthError();
-      const email = document.getElementById('auth-email').value.trim();
-      const pw = document.getElementById('auth-password').value;
-      const pw2 = document.getElementById('auth-password2').value;
+      const email = document.getElementById('signup-email').value.trim();
+      const pw = document.getElementById('signup-password').value;
+      const pw2 = document.getElementById('signup-password2').value;
       if (!email || !pw) return showAuthError('Enter an email and password.');
       if (pw !== pw2) return showAuthError('Passwords do not match.');
       const { data, error } = await sb.auth.signUp({ email, password: pw });
@@ -396,8 +429,8 @@
 
     async function doSignIn() {
       clearAuthError();
-      const email = document.getElementById('auth-email').value.trim();
-      const pw = document.getElementById('auth-password').value;
+      const email = document.getElementById('signin-email').value.trim();
+      const pw = document.getElementById('signin-password').value;
       if (!email || !pw) return showAuthError('Enter an email and password.');
       const { error } = await sb.auth.signInWithPassword({ email, password: pw });
       if (error) return showAuthError(error.message);
@@ -418,6 +451,7 @@
         state.data = {};
         document.getElementById('app').style.display = 'none';
         document.getElementById('login-screen').style.display = 'block';
+        showAuthMode('choice');
       }
     });
 
