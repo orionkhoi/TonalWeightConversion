@@ -1,32 +1,13 @@
-# TonalPlan — Weight Converter Website
+# TonalPlan — Personal Weight Converter
 
-Paste the HTML block below into an `.html` file and open it in any browser.
+Paste the HTML block below into a file named `tonalplan.html` and open it in any browser. Data is saved locally in your browser (localStorage) — nothing leaves your computer.
 
----
+## How it works
 
-## Conversion Formula
-
-Based on an independent study from High Point University (funded by Tonal):
-
-- Tonal digital weight feels **16–26% heavier** than equivalent free weights
-- The gap **scales with weight** — heavier loads = bigger difference
-- Study data points: 110 lbs Tonal ≈ 135 lbs free | 198 lbs Tonal ≈ 260 lbs free
-
-**Formula used:**
-
-```
-freelift = tonal × (1.12 + 0.000977 × tonal)
-```
-
-For reverse (freelift → tonal), the quadratic formula is applied:
-
-```
-tonal = (−1.12 + √(1.2544 + 0.003908 × freelift)) / 0.001954
-```
-
-Source: [Tonal — New Study Shows Tonal's Weight Feels Up to 23 Percent Heavier Than You'd Expect](https://tonal.com/blogs/all/study-shows-tonal-weight-may-feel-heavier)
-
----
+1. **Log your lifts** — enter an exercise name, the Tonal weight you used, and the free weight that felt equivalent
+2. **Build your multiplier** — each time you log a data point for an exercise, the site averages your entries to refine the multiplier
+3. **Convert** — pick any logged exercise and convert in either direction using your personal data
+4. **Fallback** — exercises you haven't logged yet use the High Point University study formula (×1.20–1.31 scaling with weight) as a starting estimate
 
 ## HTML Code
 
@@ -36,299 +17,552 @@ Source: [Tonal — New Study Shows Tonal's Weight Feels Up to 23 Percent Heavier
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TonalPlan — Weight Converter</title>
+  <title>TonalPlan</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    :root {
+      --bg: #0f0f0f;
+      --surface: #1a1a1a;
+      --border: #2a2a2a;
+      --accent: #c8ff00;
+      --text: #f0f0f0;
+      --muted: #666;
+      --dim: #444;
+    }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #0f0f0f;
-      color: #f0f0f0;
+      background: var(--bg);
+      color: var(--text);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      padding: 2rem 1rem;
+      padding: 2rem 1rem 4rem;
     }
 
+    /* ── Header ── */
+    .header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
     .logo {
-      font-size: 0.75rem;
+      font-size: 0.7rem;
       letter-spacing: 0.2em;
       text-transform: uppercase;
-      color: #888;
-      margin-bottom: 0.5rem;
+      color: var(--muted);
+      margin-bottom: 0.4rem;
     }
-
-    h1 {
-      font-size: 2rem;
+    .header h1 {
+      font-size: 1.9rem;
       font-weight: 700;
       letter-spacing: -0.02em;
-      margin-bottom: 0.4rem;
-      color: #fff;
+    }
+    .header p {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-top: 0.3rem;
     }
 
-    .subtitle {
-      font-size: 0.9rem;
-      color: #666;
-      margin-bottom: 2.5rem;
-      text-align: center;
-    }
-
-    .cards {
+    /* ── Tabs ── */
+    .tabs {
       display: flex;
-      gap: 1.5rem;
-      width: 100%;
-      max-width: 700px;
-      flex-wrap: wrap;
-      justify-content: center;
+      gap: 0.5rem;
+      margin-bottom: 2rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.3rem;
+    }
+    .tab {
+      padding: 0.55rem 1.4rem;
+      border-radius: 9px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      transition: all 0.15s;
+    }
+    .tab.active {
+      background: var(--accent);
+      color: #000;
     }
 
+    /* ── Views ── */
+    .view { display: none; width: 100%; max-width: 620px; }
+    .view.active { display: block; }
+
+    /* ── Card ── */
     .card {
-      background: #1a1a1a;
-      border: 1px solid #2a2a2a;
+      background: var(--surface);
+      border: 1px solid var(--border);
       border-radius: 16px;
-      padding: 2rem;
-      flex: 1;
-      min-width: 280px;
+      padding: 1.75rem;
+      margin-bottom: 1rem;
     }
-
-    .card-label {
+    .card-title {
       font-size: 0.7rem;
       letter-spacing: 0.15em;
       text-transform: uppercase;
-      color: #555;
-      margin-bottom: 0.6rem;
-    }
-
-    .card h2 {
-      font-size: 1.1rem;
-      font-weight: 600;
-      margin-bottom: 1.5rem;
-      color: #e0e0e0;
-    }
-
-    .card h2 span {
-      color: #c8ff00;
-    }
-
-    .input-row {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
+      color: var(--muted);
       margin-bottom: 1.25rem;
     }
 
-    input[type="number"] {
+    /* ── Form elements ── */
+    label {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-bottom: 0.35rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    input[type="text"],
+    input[type="number"],
+    select {
       width: 100%;
       background: #111;
-      border: 1px solid #333;
+      border: 1px solid var(--border);
       border-radius: 10px;
-      color: #fff;
-      font-size: 1.5rem;
-      font-weight: 600;
-      padding: 0.75rem 1rem;
+      color: var(--text);
+      font-size: 1rem;
+      padding: 0.65rem 0.9rem;
       outline: none;
-      transition: border-color 0.2s;
-      -moz-appearance: textfield;
-    }
-
-    input[type="number"]::-webkit-outer-spin-button,
-    input[type="number"]::-webkit-inner-spin-button {
-      -webkit-appearance: none;
-    }
-
-    input[type="number"]:focus {
-      border-color: #c8ff00;
-    }
-
-    .unit {
-      font-size: 0.85rem;
-      color: #555;
-      white-space: nowrap;
-    }
-
-    .result-label {
-      font-size: 0.7rem;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: #555;
-      margin-bottom: 0.4rem;
-    }
-
-    .result-value {
-      font-size: 2.5rem;
-      font-weight: 700;
-      color: #c8ff00;
-      letter-spacing: -0.02em;
-      line-height: 1;
-      margin-bottom: 0.3rem;
-    }
-
-    .result-unit {
-      font-size: 0.85rem;
-      color: #555;
+      transition: border-color 0.15s;
       margin-bottom: 1rem;
+      -moz-appearance: textfield;
+      appearance: none;
+    }
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+    input:focus, select:focus { border-color: var(--accent); }
+    select { cursor: pointer; }
+
+    .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .row-2 input { margin-bottom: 0; }
+
+    .btn {
+      width: 100%;
+      padding: 0.75rem;
+      border-radius: 10px;
+      border: none;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-primary { background: var(--accent); color: #000; }
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      margin-top: 0.5rem;
     }
 
-    .multiplier-badge {
-      display: inline-block;
-      background: #222;
-      border: 1px solid #333;
+    /* ── Convert result ── */
+    .result-block {
+      background: #111;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      margin-top: 1.25rem;
+    }
+    .result-label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.3rem; }
+    .result-val { font-size: 2.8rem; font-weight: 700; color: var(--accent); letter-spacing: -0.03em; line-height: 1; }
+    .result-unit { font-size: 0.85rem; color: var(--muted); margin-top: 0.2rem; }
+    .result-meta {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.9rem;
+      flex-wrap: wrap;
+    }
+    .badge {
+      background: #1e1e1e;
+      border: 1px solid var(--border);
       border-radius: 6px;
-      padding: 0.3rem 0.6rem;
-      font-size: 0.75rem;
+      padding: 0.25rem 0.55rem;
+      font-size: 0.72rem;
       color: #888;
     }
+    .badge span { color: #bbb; font-weight: 600; }
 
-    .multiplier-badge span {
-      color: #aaa;
-      font-weight: 600;
-    }
-
-    .divider {
+    /* ── Exercise table ── */
+    .ex-list { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 0.5rem; }
+    .ex-row {
+      background: #111;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.85rem 1rem;
       display: flex;
       align-items: center;
-      gap: 0.75rem;
-      color: #333;
-      font-size: 1.2rem;
-      align-self: center;
-      padding-top: 2rem;
+      justify-content: space-between;
+      gap: 1rem;
     }
+    .ex-name { font-size: 0.95rem; font-weight: 500; flex: 1; }
+    .ex-mult {
+      font-size: 0.85rem;
+      color: var(--accent);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .ex-count { font-size: 0.72rem; color: var(--dim); white-space: nowrap; }
+    .ex-delete {
+      background: none;
+      border: none;
+      color: var(--dim);
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 0 0.2rem;
+      transition: color 0.15s;
+    }
+    .ex-delete:hover { color: #ff4444; }
+
+    .empty {
+      text-align: center;
+      color: var(--dim);
+      font-size: 0.85rem;
+      padding: 2rem 0;
+    }
+
+    /* ── Datalist suggestion style ── */
+    datalist { display: none; }
 
     .footnote {
-      margin-top: 2.5rem;
-      font-size: 0.75rem;
-      color: #444;
+      font-size: 0.72rem;
+      color: var(--dim);
       text-align: center;
-      max-width: 560px;
+      margin-top: 1.5rem;
       line-height: 1.6;
     }
+    .footnote a { color: #555; text-decoration: underline; }
 
-    .footnote a {
-      color: #666;
-      text-decoration: underline;
+    /* ── Entries modal-ish expand ── */
+    .entries-wrap { margin-top: 0.5rem; display: none; }
+    .entries-wrap.open { display: block; }
+    .entry-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.45rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8rem;
+      color: #aaa;
     }
-
-    @media (max-width: 600px) {
-      .divider { display: none; }
-      h1 { font-size: 1.5rem; }
+    .entry-item:last-child { border-bottom: none; }
+    .entry-del {
+      background: none; border: none; color: var(--dim);
+      cursor: pointer; font-size: 0.85rem;
     }
+    .entry-del:hover { color: #ff4444; }
   </style>
 </head>
 <body>
 
-  <p class="logo">TonalPlan</p>
-  <h1>Weight Converter</h1>
-  <p class="subtitle">Tonal digital weight &harr; Free weight equivalent</p>
-
-  <div class="cards">
-
-    <!-- Tonal → Free -->
-    <div class="card">
-      <p class="card-label">Convert</p>
-      <h2>Tonal → <span>Free Weight</span></h2>
-
-      <div class="input-row">
-        <input
-          type="number"
-          id="tonal-input"
-          placeholder="0"
-          min="0"
-          max="200"
-          oninput="convertToFree(this.value)"
-        />
-        <span class="unit">lbs (Tonal)</span>
-      </div>
-
-      <p class="result-label">Free weight equivalent</p>
-      <div class="result-value" id="free-result">—</div>
-      <div class="result-unit">lbs</div>
-      <div class="multiplier-badge" id="multiplier-1">Enter a weight above</div>
-    </div>
-
-    <div class="divider">⇄</div>
-
-    <!-- Free → Tonal -->
-    <div class="card">
-      <p class="card-label">Convert</p>
-      <h2>Free Weight → <span>Tonal</span></h2>
-
-      <div class="input-row">
-        <input
-          type="number"
-          id="free-input"
-          placeholder="0"
-          min="0"
-          oninput="convertToTonal(this.value)"
-        />
-        <span class="unit">lbs (free)</span>
-      </div>
-
-      <p class="result-label">Tonal equivalent</p>
-      <div class="result-value" id="tonal-result">—</div>
-      <div class="result-unit">lbs</div>
-      <div class="multiplier-badge" id="multiplier-2">Enter a weight above</div>
-    </div>
-
+  <div class="header">
+    <p class="logo">TonalPlan</p>
+    <h1>Weight Converter</h1>
+    <p>Your personal Tonal ↔ free weight tracker</p>
   </div>
 
-  <p class="footnote">
-    Conversion based on an independent High Point University study showing Tonal digital weight
-    feels 16–26% heavier than free weights, with the gap increasing at higher loads.
-    Formula derived from study data points: 110 lbs Tonal ≈ 135 lbs free &amp;
-    198 lbs Tonal ≈ 260 lbs free.
-    <a href="https://tonal.com/blogs/all/study-shows-tonal-weight-may-feel-heavier" target="_blank">
-      Source
-    </a>
-  </p>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('convert')">Convert</button>
+    <button class="tab" onclick="switchTab('log')">My Lifts</button>
+  </div>
+
+  <!-- ══ CONVERT VIEW ══ -->
+  <div class="view active" id="view-convert">
+    <div class="card">
+      <p class="card-title">Convert weight</p>
+
+      <label>Exercise</label>
+      <select id="conv-exercise" onchange="clearResult()">
+        <option value="__study__">— Use study formula (no exercise selected) —</option>
+      </select>
+
+      <label>Direction</label>
+      <select id="conv-direction" onchange="clearResult()">
+        <option value="tonal-to-free">Tonal → Free weight</option>
+        <option value="free-to-tonal">Free weight → Tonal</option>
+      </select>
+
+      <label id="conv-input-label">Tonal weight (lbs)</label>
+      <input type="number" id="conv-weight" placeholder="e.g. 80" min="0" oninput="clearResult()" />
+
+      <button class="btn btn-primary" onclick="doConvert()">Convert</button>
+
+      <div class="result-block" id="result-block" style="display:none">
+        <p class="result-label" id="result-label">Free weight equivalent</p>
+        <div class="result-val" id="result-val">—</div>
+        <div class="result-unit">lbs</div>
+        <div class="result-meta">
+          <span class="badge">Multiplier: <span id="result-mult">—</span></span>
+          <span class="badge" id="result-source-badge">Source: <span id="result-source">—</span></span>
+        </div>
+      </div>
+    </div>
+
+    <p class="footnote">
+      Exercises you haven't logged use the
+      <a href="https://tonal.com/blogs/all/study-shows-tonal-weight-may-feel-heavier" target="_blank">
+        High Point University study
+      </a>
+      formula as a starting estimate (×1.16–1.31, scaling with weight).
+    </p>
+  </div>
+
+  <!-- ══ LOG VIEW ══ -->
+  <div class="view" id="view-log">
+    <div class="card">
+      <p class="card-title">Log a data point</p>
+
+      <label>Exercise name</label>
+      <input type="text" id="log-exercise" list="ex-suggestions" placeholder="e.g. Upright Row" autocomplete="off" />
+      <datalist id="ex-suggestions"></datalist>
+
+      <div class="row-2">
+        <div>
+          <label>Tonal weight (lbs)</label>
+          <input type="number" id="log-tonal" placeholder="e.g. 20" min="0" />
+        </div>
+        <div>
+          <label>Free weight felt equiv. (lbs)</label>
+          <input type="number" id="log-free" placeholder="e.g. 55" min="0" />
+        </div>
+      </div>
+
+      <button class="btn btn-primary" onclick="logEntry()">Save data point</button>
+    </div>
+
+    <div class="card">
+      <p class="card-title">Your exercises</p>
+      <div class="ex-list" id="ex-list">
+        <p class="empty">No exercises logged yet. Add your first one above.</p>
+      </div>
+    </div>
+  </div>
 
   <script>
-    // freelift = tonal × (1.12 + 0.000977 × tonal)
-    // Derived from two study data points: (110, 135) and (198, 260)
-    function toFree(tonal) {
+    // ── Storage ──────────────────────────────────────────────
+    // Shape: { "Upright Row": [{tonal: 20, free: 55}, ...], ... }
+    function getData() {
+      try { return JSON.parse(localStorage.getItem('tonalplan') || '{}'); }
+      catch { return {}; }
+    }
+    function saveData(d) {
+      localStorage.setItem('tonalplan', JSON.stringify(d));
+    }
+
+    // ── Study formula fallback ────────────────────────────────
+    function studyToFree(tonal) {
       if (tonal <= 0) return 0;
       return tonal * (1.12 + 0.000977 * tonal);
     }
-
-    // Inverse via quadratic formula:
-    // 0.000977·t² + 1.12·t − freelift = 0
-    function toTonal(free) {
+    function studyToTonal(free) {
       if (free <= 0) return 0;
       return (-1.12 + Math.sqrt(1.2544 + 0.003908 * free)) / 0.001954;
     }
 
-    function fmt(val) {
-      return Math.round(val * 10) / 10;
+    // ── Multiplier for an exercise ────────────────────────────
+    function getMultiplier(exName) {
+      const d = getData();
+      const entries = d[exName];
+      if (!entries || entries.length === 0) return null;
+      const avg = entries.reduce((sum, e) => sum + e.free / e.tonal, 0) / entries.length;
+      return avg;
     }
 
-    function convertToFree(val) {
-      const tonal = parseFloat(val);
-      if (isNaN(tonal) || val === '') {
-        document.getElementById('free-result').textContent = '—';
-        document.getElementById('multiplier-1').textContent = 'Enter a weight above';
-        return;
-      }
-      const free = toFree(tonal);
-      const mult = tonal > 0 ? (free / tonal).toFixed(2) : '—';
-      document.getElementById('free-result').textContent = fmt(free);
-      document.getElementById('multiplier-1').innerHTML =
-        `Multiplier: <span>×${mult}</span>`;
+    function fmt(val) { return Math.round(val * 10) / 10; }
+
+    // ── Tab switching ─────────────────────────────────────────
+    function switchTab(name) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById('view-' + name).classList.add('active');
+      if (name === 'log') renderList();
+      if (name === 'convert') populateConvertSelect();
     }
 
-    function convertToTonal(val) {
-      const free = parseFloat(val);
-      if (isNaN(free) || val === '') {
-        document.getElementById('tonal-result').textContent = '—';
-        document.getElementById('multiplier-2').textContent = 'Enter a weight above';
+    // ── Populate exercise select in Convert ───────────────────
+    function populateConvertSelect() {
+      const sel = document.getElementById('conv-exercise');
+      const prev = sel.value;
+      sel.innerHTML = '<option value="__study__">— Use study formula (no exercise selected) —</option>';
+      const d = getData();
+      Object.keys(d).sort().forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name + ' (×' + getMultiplier(name).toFixed(2) + ')';
+        sel.appendChild(opt);
+      });
+      if (prev && sel.querySelector(`option[value="${CSS.escape(prev)}"]`)) sel.value = prev;
+    }
+
+    // ── Update input label based on direction ─────────────────
+    document.getElementById('conv-direction').addEventListener('change', function() {
+      const label = document.getElementById('conv-input-label');
+      label.textContent = this.value === 'tonal-to-free'
+        ? 'Tonal weight (lbs)'
+        : 'Free weight (lbs)';
+      clearResult();
+    });
+
+    // ── Convert ───────────────────────────────────────────────
+    function doConvert() {
+      const exKey = document.getElementById('conv-exercise').value;
+      const dir = document.getElementById('conv-direction').value;
+      const weight = parseFloat(document.getElementById('conv-weight').value);
+
+      if (isNaN(weight) || weight <= 0) {
+        alert('Please enter a valid weight.');
         return;
       }
-      const tonal = toTonal(free);
-      const mult = tonal > 0 ? (free / tonal).toFixed(2) : '—';
-      document.getElementById('tonal-result').textContent = fmt(tonal);
-      document.getElementById('multiplier-2').innerHTML =
-        `Multiplier: <span>×${mult}</span>`;
+
+      let result, mult, source;
+
+      if (exKey === '__study__') {
+        if (dir === 'tonal-to-free') {
+          result = studyToFree(weight);
+          mult = result / weight;
+        } else {
+          result = studyToTonal(weight);
+          mult = weight / result;
+        }
+        source = 'HPU study formula';
+      } else {
+        mult = getMultiplier(exKey);
+        if (!mult) {
+          alert('No data found for that exercise.');
+          return;
+        }
+        if (dir === 'tonal-to-free') {
+          result = weight * mult;
+        } else {
+          result = weight / mult;
+        }
+        source = 'Your data';
+      }
+
+      document.getElementById('result-val').textContent = fmt(result);
+      document.getElementById('result-mult').textContent = '×' + mult.toFixed(2);
+      document.getElementById('result-source').textContent = source;
+      document.getElementById('result-label').textContent =
+        dir === 'tonal-to-free' ? 'Free weight equivalent' : 'Tonal equivalent';
+      document.getElementById('result-block').style.display = 'block';
     }
+
+    function clearResult() {
+      document.getElementById('result-block').style.display = 'none';
+    }
+
+    // ── Log entry ─────────────────────────────────────────────
+    function logEntry() {
+      const name = document.getElementById('log-exercise').value.trim();
+      const tonal = parseFloat(document.getElementById('log-tonal').value);
+      const free = parseFloat(document.getElementById('log-free').value);
+
+      if (!name) { alert('Please enter an exercise name.'); return; }
+      if (isNaN(tonal) || tonal <= 0) { alert('Please enter a valid Tonal weight.'); return; }
+      if (isNaN(free) || free <= 0) { alert('Please enter a valid free weight.'); return; }
+
+      const d = getData();
+      if (!d[name]) d[name] = [];
+      d[name].push({ tonal, free });
+      saveData(d);
+
+      document.getElementById('log-exercise').value = '';
+      document.getElementById('log-tonal').value = '';
+      document.getElementById('log-free').value = '';
+
+      updateSuggestions();
+      renderList();
+      populateConvertSelect();
+    }
+
+    // ── Render exercise list ──────────────────────────────────
+    function renderList() {
+      const d = getData();
+      const container = document.getElementById('ex-list');
+      const names = Object.keys(d).sort();
+
+      if (names.length === 0) {
+        container.innerHTML = '<p class="empty">No exercises logged yet. Add your first one above.</p>';
+        return;
+      }
+
+      container.innerHTML = names.map(name => {
+        const entries = d[name];
+        const mult = getMultiplier(name);
+        const entriesHtml = entries.map((e, i) =>
+          `<div class="entry-item">
+            <span>${e.tonal} lbs Tonal → ${e.free} lbs free (×${(e.free/e.tonal).toFixed(2)})</span>
+            <button class="entry-del" onclick="deleteEntry('${esc(name)}', ${i})">✕</button>
+          </div>`
+        ).join('');
+
+        return `
+          <div class="ex-row" style="flex-direction:column; align-items:stretch; gap:0.5rem;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:1rem;">
+              <span class="ex-name">${esc(name)}</span>
+              <span class="ex-mult">×${mult.toFixed(2)}</span>
+              <span class="ex-count">${entries.length} data point${entries.length !== 1 ? 's' : ''}</span>
+              <button class="ex-delete" onclick="deleteExercise('${esc(name)}')" title="Delete exercise">✕</button>
+            </div>
+            <button class="btn btn-ghost" style="font-size:0.75rem; padding:0.4rem;" onclick="toggleEntries('entries-${esc(name)}')">
+              Show / hide data points
+            </button>
+            <div class="entries-wrap" id="entries-${esc(name)}">${entriesHtml}</div>
+          </div>`;
+      }).join('');
+    }
+
+    function toggleEntries(id) {
+      const el = document.getElementById(id);
+      if (el) el.classList.toggle('open');
+    }
+
+    function deleteEntry(name, index) {
+      if (!confirm('Delete this data point?')) return;
+      const d = getData();
+      if (!d[name]) return;
+      d[name].splice(index, 1);
+      if (d[name].length === 0) delete d[name];
+      saveData(d);
+      updateSuggestions();
+      renderList();
+      populateConvertSelect();
+    }
+
+    function deleteExercise(name) {
+      if (!confirm(`Delete all data for "${name}"?`)) return;
+      const d = getData();
+      delete d[name];
+      saveData(d);
+      updateSuggestions();
+      renderList();
+      populateConvertSelect();
+    }
+
+    function esc(str) {
+      return str.replace(/['"&<>]/g, c => ({'\'':'&#39;','"':'&quot;','&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+    }
+
+    // ── Datalist suggestions ──────────────────────────────────
+    function updateSuggestions() {
+      const dl = document.getElementById('ex-suggestions');
+      const d = getData();
+      dl.innerHTML = Object.keys(d).sort().map(n =>
+        `<option value="${esc(n)}">`
+      ).join('');
+    }
+
+    // ── Init ──────────────────────────────────────────────────
+    populateConvertSelect();
+    updateSuggestions();
   </script>
 
 </body>
