@@ -68,11 +68,12 @@
     .account-left { display: flex; align-items: center; gap: 0.6rem; min-width: 0; }
     .account-email { color: #bbb; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .sync-status { display: inline-flex; align-items: center; gap: 0.35rem; color: var(--muted); white-space: nowrap; }
-    .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dim); }
-    .sync-dot.saving { background: #f5b301; }
-    .sync-dot.synced { background: var(--accent); }
+    .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dim); transition: background 0.2s, box-shadow 0.2s; }
+    .sync-dot.syncing { background: #f5b301; box-shadow: 0 0 6px #f5b301; }
+    .sync-dot.saving { background: #f5b301; box-shadow: 0 0 6px #f5b301; }
+    .sync-dot.synced { background: var(--accent); box-shadow: 0 0 7px var(--accent); }
     .sync-dot.offline { background: #888; }
-    .sync-dot.error  { background: #ff4444; }
+    .sync-dot.error  { background: #ff4444; box-shadow: 0 0 6px #ff4444; }
     .signout-btn {
       background: transparent; border: 1px solid var(--border); color: var(--muted);
       border-radius: 8px; padding: 0.35rem 0.7rem; font-size: 0.75rem; cursor: pointer;
@@ -275,7 +276,7 @@
         <span class="account-email" id="account-email">—</span>
       </div>
       <div style="display:flex; align-items:center; gap:0.75rem;">
-        <span class="sync-status"><span class="sync-dot" id="sync-dot"></span><span id="sync-label">Synced</span></span>
+        <span class="sync-status"><span class="sync-dot syncing" id="sync-dot"></span><span id="sync-label">Syncing…</span></span>
         <button class="signout-btn" onclick="doSignOut()">Sign out</button>
       </div>
     </div>
@@ -448,13 +449,16 @@
     }
 
     // Session-driven boot: shows app when signed in, login when signed out.
-    sb.auth.onAuthStateChange(async (_event, session) => {
+    // NOTE: do not await Supabase calls directly in this callback — the auth
+    // library holds a lock here and awaiting a query inside would deadlock.
+    // Defer hydrate with setTimeout(0) so the callback returns first.
+    sb.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         state.user = session.user;
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('app').style.display = 'flex';
         document.getElementById('account-email').textContent = session.user.email;
-        await hydrateFromCloud();
+        setTimeout(hydrateFromCloud, 0);
       } else {
         state.user = null;
         state.data = {};
@@ -468,20 +472,25 @@
     function getData() { return state.data; }
 
     async function hydrateFromCloud() {
+      setSyncStatus('syncing');
       // 1) instant paint from cache
       try { state.data = normalize(JSON.parse(localStorage.getItem(cacheKey()))); }
       catch { state.data = blankData(); }
       refreshAll();
 
-      // 2) fetch authoritative copy
-      const { data, error } = await sb.from('user_data')
-        .select('data, updated_at').eq('user_id', state.user.id).single();
-      if (!error && data) {
-        state.data = normalize(data.data);
-        localStorage.setItem(cacheKey(), JSON.stringify(state.data));
-        refreshAll();
-        setSyncStatus('synced');
-      } else if (error) {
+      // 2) fetch authoritative copy (maybeSingle => no error when the row doesn't exist yet)
+      try {
+        const { data, error } = await sb.from('user_data')
+          .select('data, updated_at').eq('user_id', state.user.id).maybeSingle();
+        if (error) {
+          setSyncStatus('error');
+        } else {
+          state.data = normalize(data ? data.data : {});
+          localStorage.setItem(cacheKey(), JSON.stringify(state.data));
+          refreshAll();
+          setSyncStatus('synced');
+        }
+      } catch (e) {
         setSyncStatus('error');
       }
 
@@ -526,7 +535,7 @@
       if (!dot) return;
       dot.className = 'sync-dot ' + status;
       label.textContent = {
-        saving: 'Saving…', synced: 'Synced', offline: 'Offline', error: 'Sync error'
+        syncing: 'Syncing…', saving: 'Saving…', synced: 'Synced', offline: 'Offline', error: 'Sync error'
       }[status] || '';
     }
 
