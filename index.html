@@ -1019,7 +1019,9 @@
 
       const hint = detectGoalHint(goal);
       const emphasize = hint ? GOAL_HINTS[hint].emphasize : [];
-      const scored = candidates.map(x => ({ x, s: scoreExercise(x, emphasize) })).sort((a, b) => b.s - a.s);
+      // Random tiebreaker (< 1) so equally-relevant moves shuffle each run — regenerating
+      // gives fresh variety while the goal emphasis (score steps of 2) still dominates.
+      const scored = candidates.map(x => ({ x, s: scoreExercise(x, emphasize) + Math.random() })).sort((a, b) => b.s - a.s);
 
       const byIntensity = t => scored.filter(o => o.x.intensity === t).map(o => o.x);
       const used = new Set();
