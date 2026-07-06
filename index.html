@@ -201,6 +201,56 @@
     }
     .auth-error.info { background: #14231a; border-color: #245a2f; color: #a9ffbf; }
     .auth-error.show { display: block; }
+
+    /* ── Workout Creator ── */
+    .gen-status { font-size: 0.8rem; color: var(--muted); margin-top: 0.75rem; text-align: center; min-height: 1rem; }
+    .equip-hint { font-size: 0.78rem; color: var(--dim); margin: -0.5rem 0 1rem; }
+    .equip-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+    .equip-item {
+      display: flex; align-items: center; gap: 0.55rem; background: #111;
+      border: 1px solid var(--border); border-radius: 10px; padding: 0.6rem 0.8rem;
+      font-size: 0.85rem; color: var(--text); cursor: pointer; user-select: none;
+    }
+    .equip-item input { width: auto; margin: 0; accent-color: var(--accent); cursor: pointer; }
+    .equip-item.locked { opacity: 0.6; cursor: default; }
+
+    .workout-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 0.5rem; }
+    .workout-title { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.01em; }
+    .workout-sub { font-size: 0.78rem; color: var(--muted); margin-top: 0.15rem; }
+
+    .wo-section { margin-top: 1.25rem; }
+    .wo-section-name {
+      font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent);
+      margin-bottom: 0.6rem; display: flex; justify-content: space-between; align-items: center;
+    }
+    .wo-section-meta { color: var(--muted); letter-spacing: 0.05em; }
+    .wo-item {
+      background: #111; border: 1px solid var(--border); border-radius: 10px;
+      padding: 0.8rem 0.95rem; margin-bottom: 0.55rem;
+    }
+    .wo-item-top { display: flex; justify-content: space-between; align-items: baseline; gap: 0.75rem; }
+    .wo-item-name { font-size: 0.95rem; font-weight: 600; }
+    .wo-item-sets { font-size: 0.85rem; color: var(--accent); font-weight: 600; white-space: nowrap; }
+    .wo-badges { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.5rem; }
+    .wo-badge {
+      background: #1e1e1e; border: 1px solid var(--border); border-radius: 6px;
+      padding: 0.2rem 0.5rem; font-size: 0.7rem; color: #9a9a9a;
+    }
+    .wo-badge.mode { color: #c8ff00; border-color: #34401a; }
+    .wo-badge.load { color: #bbb; }
+    .wo-cue { font-size: 0.78rem; color: var(--muted); margin-top: 0.5rem; font-style: italic; }
+
+    .saved-wo {
+      display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+      background: #111; border: 1px solid var(--border); border-radius: 10px;
+      padding: 0.7rem 0.9rem; margin-bottom: 0.55rem; cursor: pointer;
+    }
+    .saved-wo:hover { border-color: #3a3a3a; }
+    .saved-wo-info { min-width: 0; }
+    .saved-wo-title { font-size: 0.9rem; font-weight: 600; }
+    .saved-wo-date { font-size: 0.72rem; color: var(--dim); margin-top: 0.15rem; }
+    .saved-wo-del { background: none; border: none; color: var(--dim); cursor: pointer; font-size: 1rem; }
+    .saved-wo-del:hover { color: #ff4444; }
   </style>
 </head>
 <body>
@@ -284,6 +334,7 @@
     <div class="tabs">
       <button class="tab active" onclick="switchTab('convert')">Convert</button>
       <button class="tab" onclick="switchTab('log')">My Lifts</button>
+      <button class="tab" onclick="switchTab('workout')">Workout</button>
     </div>
 
     <!-- ══ CONVERT VIEW ══ -->
@@ -358,6 +409,54 @@
       </div>
     </div>
 
+    <!-- ══ WORKOUT CREATOR VIEW ══ -->
+    <div class="view" id="view-workout">
+      <div class="card">
+        <p class="card-title">Create a workout</p>
+
+        <label>What do you want to train for?</label>
+        <input type="text" id="goalText" placeholder="e.g. more distance on my golf drive" autocomplete="off" />
+
+        <div class="row-2">
+          <div>
+            <label>Duration</label>
+            <select id="goalDuration">
+              <option value="20">20 min</option>
+              <option value="30">30 min</option>
+              <option value="45" selected>45 min</option>
+              <option value="60">60 min</option>
+            </select>
+          </div>
+          <div>
+            <label>Experience</label>
+            <select id="goalExp">
+              <option value="beginner">Beginner</option>
+              <option value="intermediate" selected>Intermediate</option>
+              <option value="advanced">Advanced</option>
+            </select>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" onclick="generateWorkout()">Generate workout</button>
+        <p class="gen-status" id="gen-status"></p>
+      </div>
+
+      <div class="card">
+        <p class="card-title">My equipment</p>
+        <p class="equip-hint">Workouts only use moves your gear supports.</p>
+        <div class="equip-grid" id="equip-grid"></div>
+      </div>
+
+      <div id="workout-result"></div>
+
+      <div class="card">
+        <p class="card-title">Saved workouts</p>
+        <div id="saved-workouts">
+          <p class="empty">No saved workouts yet.</p>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <script>
@@ -367,23 +466,29 @@
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     // ══ App state ════════════════════════════════════════════
-    // state.data shape: { "Upright Row": [{tonal, free}], ... }
-    const state = { user: null, data: {} };
+    // state.data shape: { lifts: { "Upright Row": [{tonal, free}] }, equipment: {...}, workouts: [...] }
+    const state = { user: null, data: null };
 
-    const blankData = () => ({});
+    const DEFAULT_EQUIPMENT = { handles: true, bar: false, rope: false, bench: false, ankleStraps: false, roller: false, mat: false };
+    const blankData = () => ({ lifts: {}, equipment: { ...DEFAULT_EQUIPMENT }, workouts: [] });
     const cacheKey = () => 'tonalplan_cache_' + state.user.id;
 
-    // Keep only valid exercise entries (defends against foreign data shapes)
+    // Normalize any stored blob into the canonical { lifts, equipment, workouts } shape.
+    // Also migrates the old flat shape ({ "Exercise": [{tonal,free}], ... }) into .lifts.
     function normalize(d) {
-      const out = {};
-      if (d && typeof d === 'object' && !Array.isArray(d)) {
-        for (const [k, v] of Object.entries(d)) {
-          if (Array.isArray(v) && v.length &&
-              v.every(e => e && typeof e.tonal === 'number' && typeof e.free === 'number')) {
-            out[k] = v;
-          }
+      d = (d && typeof d === 'object' && !Array.isArray(d)) ? d : {};
+      const out = blankData();
+      // lifts: use d.lifts if present, else treat top-level keys as the legacy lift map
+      const liftSrc = (d.lifts && typeof d.lifts === 'object') ? d.lifts : d;
+      for (const [k, v] of Object.entries(liftSrc)) {
+        if (k === 'lifts' || k === 'equipment' || k === 'workouts') continue;
+        if (Array.isArray(v) && v.length &&
+            v.every(e => e && typeof e.tonal === 'number' && typeof e.free === 'number')) {
+          out.lifts[k] = v;
         }
       }
+      if (d.equipment && typeof d.equipment === 'object') out.equipment = { ...DEFAULT_EQUIPMENT, ...d.equipment };
+      if (Array.isArray(d.workouts)) out.workouts = d.workouts;
       return out;
     }
 
@@ -442,7 +547,7 @@
       try { await sb.auth.signOut({ scope: 'local' }); } catch (e) { /* clear locally regardless */ }
       // Force the UI back to login even if the auth event is delayed or errored.
       state.user = null;
-      state.data = {};
+      state.data = null;
       document.getElementById('app').style.display = 'none';
       document.getElementById('login-screen').style.display = 'block';
       showAuthMode('choice');
@@ -461,7 +566,7 @@
         setTimeout(hydrateFromCloud, 0);
       } else {
         state.user = null;
-        state.data = {};
+        state.data = null;
         document.getElementById('app').style.display = 'none';
         document.getElementById('login-screen').style.display = 'block';
         showAuthMode('choice');
@@ -517,12 +622,12 @@
 
     // One-time import of pre-account (Phase 2) local data
     async function maybeMigrateLocalData() {
-      if (Object.keys(state.data).length) return;   // account already has data
+      if (Object.keys(state.data.lifts).length) return;   // account already has lifts
       let legacy = null;
       try { legacy = normalize(JSON.parse(localStorage.getItem('tonalplan'))); } catch {}
-      if (legacy && Object.keys(legacy).length &&
+      if (legacy && Object.keys(legacy.lifts).length &&
           confirm('Import your existing local TonalPlan data into this account?')) {
-        state.data = legacy;
+        state.data.lifts = legacy.lifts;
         refreshAll();
         saveData();
       }
@@ -544,7 +649,7 @@
     function studyToTonal(free) { if (free <= 0) return 0; return (-1.12 + Math.sqrt(1.2544 + 0.003908 * free)) / 0.001954; }
 
     function getMultiplier(exName) {
-      const entries = state.data[exName];
+      const entries = state.data.lifts[exName];
       if (!entries || entries.length === 0) return null;
       return entries.reduce((sum, e) => sum + e.free / e.tonal, 0) / entries.length;
     }
@@ -556,6 +661,7 @@
       populateConvertSelect();
       updateSuggestions();
       renderList();
+      renderWorkoutTab();
     }
 
     function switchTab(name) {
@@ -565,13 +671,14 @@
       document.getElementById('view-' + name).classList.add('active');
       if (name === 'log') renderList();
       if (name === 'convert') populateConvertSelect();
+      if (name === 'workout') renderWorkoutTab();
     }
 
     function populateConvertSelect() {
       const sel = document.getElementById('conv-exercise');
       const prev = sel.value;
       sel.innerHTML = '<option value="__study__">— Use study formula (no exercise selected) —</option>';
-      Object.keys(state.data).sort().forEach(name => {
+      Object.keys(state.data.lifts).sort().forEach(name => {
         const opt = document.createElement('option');
         opt.value = name;
         opt.textContent = name + ' (×' + getMultiplier(name).toFixed(2) + ')';
@@ -622,8 +729,8 @@
       if (isNaN(tonal) || tonal <= 0) { alert('Please enter a valid Tonal weight.'); return; }
       if (isNaN(free) || free <= 0) { alert('Please enter a valid free weight.'); return; }
 
-      if (!state.data[name]) state.data[name] = [];
-      state.data[name].push({ tonal, free });
+      if (!state.data.lifts[name]) state.data.lifts[name] = [];
+      state.data.lifts[name].push({ tonal, free });
       saveData();
 
       document.getElementById('log-exercise').value = '';
@@ -635,13 +742,13 @@
 
     function renderList() {
       const container = document.getElementById('ex-list');
-      const names = Object.keys(state.data).sort();
+      const names = Object.keys(state.data.lifts).sort();
       if (names.length === 0) {
         container.innerHTML = '<p class="empty">No exercises logged yet. Add your first one above.</p>';
         return;
       }
       container.innerHTML = names.map(name => {
-        const entries = state.data[name];
+        const entries = state.data.lifts[name];
         const mult = getMultiplier(name);
         const entriesHtml = entries.map((e, i) =>
           `<div class="entry-item">
@@ -669,16 +776,16 @@
 
     function deleteEntry(name, index) {
       if (!confirm('Delete this data point?')) return;
-      if (!state.data[name]) return;
-      state.data[name].splice(index, 1);
-      if (state.data[name].length === 0) delete state.data[name];
+      if (!state.data.lifts[name]) return;
+      state.data.lifts[name].splice(index, 1);
+      if (state.data.lifts[name].length === 0) delete state.data.lifts[name];
       saveData();
       refreshAll();
     }
 
     function deleteExercise(name) {
       if (!confirm(`Delete all data for "${name}"?`)) return;
-      delete state.data[name];
+      delete state.data.lifts[name];
       saveData();
       refreshAll();
     }
@@ -689,7 +796,377 @@
 
     function updateSuggestions() {
       const dl = document.getElementById('ex-suggestions');
-      dl.innerHTML = Object.keys(state.data).sort().map(n => `<option value="${esc(n)}">`).join('');
+      dl.innerHTML = Object.keys(state.data.lifts).sort().map(n => `<option value="${esc(n)}">`).join('');
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // ══ WORKOUT CREATOR (rule-based, no API) ══════════════════
+    // ══════════════════════════════════════════════════════════
+
+    // Seed exercise database. Expand this array with the full Tonal move list.
+    // intensity: compound | accessory | core | power | mobility
+    // equipment: ALL must be owned. altEquipment: any-of alternative set.
+    const EXERCISES = [
+      { id:'chest_press', name:'Chest Press', pattern:'horizontal_push', primary:['chest','triceps','front_delt'],
+        equipment:['handles'], optionalEquipment:['bench'], position:'standing', unilateral:false,
+        tonalModes:['eccentric','spotter','burnout'], goalTags:['strength','hypertrophy','push','upper'], intensity:'compound' },
+      { id:'incline_press', name:'Incline Chest Press', pattern:'horizontal_push', primary:['chest','front_delt'],
+        equipment:['handles'], optionalEquipment:['bench'], position:'standing', unilateral:false,
+        tonalModes:['eccentric','burnout'], goalTags:['hypertrophy','push','upper'], intensity:'compound' },
+      { id:'bench_press_bar', name:'Bench Press', pattern:'horizontal_push', primary:['chest','triceps'],
+        equipment:['bar','bench'], position:'bench', unilateral:false,
+        tonalModes:['eccentric','spotter'], goalTags:['strength','push','upper','compound'], intensity:'compound' },
+      { id:'seated_row', name:'Seated Row', pattern:'horizontal_pull', primary:['lats','rhomboids','biceps'],
+        equipment:['handles'], optionalEquipment:['bench'], position:'seated', unilateral:false,
+        tonalModes:['eccentric'], goalTags:['strength','pull','upper'], intensity:'compound' },
+      { id:'bent_row', name:'Bent-Over Row', pattern:'horizontal_pull', primary:['lats','upper_back'],
+        equipment:['handles'], position:'standing', unilateral:false,
+        tonalModes:['eccentric','chains'], goalTags:['strength','pull','upper','posterior_chain'], intensity:'compound' },
+      { id:'lat_pulldown', name:'Lat Pulldown', pattern:'vertical_pull', primary:['lats','biceps'],
+        equipment:['handles'], position:'standing', unilateral:false,
+        tonalModes:['eccentric'], goalTags:['pull','upper','hypertrophy'], intensity:'compound' },
+      { id:'overhead_press', name:'Overhead Press', pattern:'vertical_push', primary:['shoulders','triceps'],
+        equipment:['handles'], position:'standing', unilateral:false,
+        tonalModes:['eccentric','spotter'], goalTags:['strength','push','upper'], intensity:'compound' },
+      { id:'lateral_raise', name:'Lateral Raise', pattern:'shoulder_abduction', primary:['side_delt'],
+        equipment:['handles'], position:'standing', unilateral:false,
+        tonalModes:['burnout'], goalTags:['hypertrophy','upper','accessory'], intensity:'accessory' },
+      { id:'bicep_curl', name:'Bicep Curl', pattern:'elbow_flexion', primary:['biceps'],
+        equipment:['handles'], position:'standing', unilateral:false,
+        tonalModes:['burnout','eccentric'], goalTags:['arms','upper','hypertrophy','accessory'], intensity:'accessory' },
+      { id:'tricep_pushdown', name:'Tricep Pushdown', pattern:'elbow_extension', primary:['triceps'],
+        equipment:['handles'], optionalEquipment:['rope'], position:'standing', unilateral:false,
+        tonalModes:['burnout'], goalTags:['arms','upper','accessory'], intensity:'accessory' },
+      { id:'face_pull', name:'Face Pull', pattern:'horizontal_pull', primary:['rear_delt','upper_back'],
+        equipment:['handles'], optionalEquipment:['rope'], position:'standing', unilateral:false,
+        tonalModes:[], goalTags:['pull','upper','stability','accessory'], intensity:'accessory' },
+      { id:'reverse_fly', name:'Reverse Fly', pattern:'horizontal_pull', primary:['rear_delt'],
+        equipment:['handles'], position:'standing', unilateral:false,
+        tonalModes:[], goalTags:['upper','pull','stability','accessory'], intensity:'accessory' },
+      { id:'squat', name:'Cable Squat', pattern:'squat', primary:['quads','glutes'],
+        equipment:['handles'], position:'standing', unilateral:false,
+        tonalModes:['eccentric','spotter'], goalTags:['strength','lower','legs','squat','compound'], intensity:'compound' },
+      { id:'front_squat_bar', name:'Front Squat', pattern:'squat', primary:['quads','glutes'],
+        equipment:['bar'], position:'standing', unilateral:false,
+        tonalModes:['eccentric','spotter'], goalTags:['strength','lower','legs','squat','compound'], intensity:'compound' },
+      { id:'rdl', name:'Romanian Deadlift', pattern:'hinge', primary:['hamstrings','glutes','lower_back'],
+        equipment:['bar'], altEquipment:['handles'], position:'standing', unilateral:false,
+        tonalModes:['eccentric','chains'], goalTags:['strength','posterior_chain','hinge','power','sport'], intensity:'compound' },
+      { id:'split_squat', name:'Bulgarian Split Squat', pattern:'lunge', primary:['quads','glutes'],
+        equipment:['handles'], optionalEquipment:['bench'], position:'standing', unilateral:true,
+        tonalModes:['eccentric'], goalTags:['strength','single_leg','legs','lower','sport','golf','kicking'], intensity:'compound' },
+      { id:'reverse_lunge', name:'Reverse Lunge', pattern:'lunge', primary:['quads','glutes'],
+        equipment:['handles'], position:'standing', unilateral:true,
+        tonalModes:['eccentric'], goalTags:['single_leg','legs','lower','sport'], intensity:'compound' },
+      { id:'calf_raise', name:'Calf Raise', pattern:'calf', primary:['calves'],
+        equipment:['handles'], position:'standing', unilateral:false,
+        tonalModes:['burnout'], goalTags:['lower','legs','accessory'], intensity:'accessory' },
+      { id:'woodchop_high_low', name:'Woodchop (high → low)', pattern:'rotation', primary:['obliques','core'],
+        equipment:['handles'], position:'standing', unilateral:true,
+        tonalModes:['chains'], goalTags:['rotation','power','golf','core','sport'], intensity:'power' },
+      { id:'cable_rotation', name:'Cable Rotation', pattern:'rotation', primary:['obliques','core'],
+        equipment:['handles'], position:'standing', unilateral:true,
+        tonalModes:['chains'], goalTags:['rotation','golf','core','sport'], intensity:'accessory' },
+      { id:'pallof_press', name:'Pallof Press', pattern:'anti_rotation', primary:['core','obliques'],
+        equipment:['handles'], position:'standing', unilateral:true,
+        tonalModes:[], goalTags:['anti_rotation','core','golf','kicking','stability'], intensity:'core' },
+      { id:'standing_hip_flexion', name:'Standing Hip Flexion (kick drive)', pattern:'hip_flexion', primary:['hip_flexors','quads'],
+        equipment:['ankleStraps'], position:'standing', unilateral:true,
+        tonalModes:['chains','burnout'], goalTags:['kicking','football','power','sport'], intensity:'power' },
+      { id:'standing_hip_extension', name:'Standing Hip Extension', pattern:'hip_extension', primary:['glutes','hamstrings'],
+        equipment:['ankleStraps'], position:'standing', unilateral:true,
+        tonalModes:['eccentric'], goalTags:['kicking','glutes','posterior_chain','sport'], intensity:'accessory' },
+      { id:'hip_adduction', name:'Standing Hip Adduction', pattern:'adduction', primary:['adductors'],
+        equipment:['ankleStraps'], position:'standing', unilateral:true,
+        tonalModes:[], goalTags:['kicking','sport','stability'], intensity:'accessory' },
+      { id:'hip_abduction', name:'Standing Hip Abduction', pattern:'abduction', primary:['glutes','abductors'],
+        equipment:['ankleStraps'], position:'standing', unilateral:true,
+        tonalModes:[], goalTags:['glutes','stability','sport'], intensity:'accessory' },
+      { id:'standing_leg_curl', name:'Standing Leg Curl', pattern:'knee_flexion', primary:['hamstrings'],
+        equipment:['ankleStraps'], position:'standing', unilateral:true,
+        tonalModes:['eccentric'], goalTags:['legs','posterior_chain','accessory'], intensity:'accessory' },
+      { id:'kneeling_crunch', name:'Cable Kneeling Crunch', pattern:'core_flexion', primary:['abs'],
+        equipment:['handles'], optionalEquipment:['mat'], position:'floor', unilateral:false,
+        tonalModes:['burnout'], goalTags:['core','hypertrophy','core_flexion'], intensity:'core' },
+      { id:'plank_row', name:'Plank Row', pattern:'anti_rotation', primary:['core','lats'],
+        equipment:['handles'], optionalEquipment:['mat'], position:'floor', unilateral:true,
+        tonalModes:[], goalTags:['core','anti_rotation','stability'], intensity:'core' },
+      { id:'glute_bridge', name:'Glute Bridge', pattern:'hip_extension', primary:['glutes'],
+        equipment:['handles'], optionalEquipment:['mat'], position:'floor', unilateral:false,
+        tonalModes:['eccentric'], goalTags:['glutes','posterior_chain','accessory'], intensity:'accessory' },
+      { id:'thoracic_rotation', name:'Thoracic Rotation', pattern:'rotation', primary:['t_spine'],
+        equipment:['handles'], position:'standing', unilateral:true,
+        tonalModes:[], goalTags:['mobility','golf','warmup','rotation'], intensity:'mobility' },
+      { id:'arm_circles', name:'Band Arm Circles', pattern:'shoulder_mobility', primary:['shoulders'],
+        equipment:['handles'], position:'standing', unilateral:false,
+        tonalModes:[], goalTags:['mobility','upper','warmup'], intensity:'mobility' },
+      { id:'cat_cow', name:'Cat–Cow', pattern:'spine_mobility', primary:['spine'],
+        equipment:[], optionalEquipment:['mat'], position:'floor', unilateral:false,
+        tonalModes:[], goalTags:['mobility','warmup','core'], intensity:'mobility' },
+      { id:'worlds_greatest_stretch', name:"World's Greatest Stretch", pattern:'full_mobility', primary:['hips','t_spine'],
+        equipment:[], optionalEquipment:['mat'], position:'floor', unilateral:true,
+        tonalModes:[], goalTags:['mobility','warmup'], intensity:'mobility' }
+    ];
+
+    const GOAL_HINTS = {
+      golf:       { emphasize:['rotation','anti_rotation','posterior_chain','single_leg','hip_extension','power'] },
+      kicking:    { emphasize:['hip_flexion','hip_extension','adduction','single_leg','anti_rotation','power'] },
+      strength:   { emphasize:['compound','push','pull','hinge','squat','strength'] },
+      hypertrophy:{ emphasize:['compound','accessory','hypertrophy','push','pull'] },
+      endurance:  { emphasize:['accessory','core','endurance'] },
+      upper:      { emphasize:['push','pull','upper','compound'] },
+      lower:      { emphasize:['squat','hinge','single_leg','legs','lower','compound'] },
+      core:       { emphasize:['core','anti_rotation','rotation','core_flexion','stability'] }
+    };
+
+    // Keyword → hint (checked in order; specific goals before generic)
+    const GOAL_KEYWORDS = [
+      ['golf',        ['golf','drive','swing']],
+      ['kicking',     ['kick','football','soccer','punt','martial','muay','strike']],
+      ['upper',       ['upper','chest','back','shoulder','arm','bench','push','pull']],
+      ['lower',       ['lower','leg','squat','glute','quad','hamstring']],
+      ['core',        ['core','abs','oblique','trunk','stability']],
+      ['endurance',   ['endurance','stamina','conditioning','cardio','tone','lean']],
+      ['hypertrophy', ['muscle','size','bigger','mass','hypertroph','build']],
+      ['strength',    ['strength','strong','power']]
+    ];
+
+    function detectGoalHint(goal) {
+      const g = ' ' + goal.toLowerCase() + ' ';
+      for (const [key, words] of GOAL_KEYWORDS) {
+        if (words.some(w => g.includes(w))) return key;
+      }
+      return null;
+    }
+
+    const EQUIP_LABELS = { handles:'Handles', bar:'Bar', rope:'Rope', bench:'Bench', ankleStraps:'Ankle Straps', roller:'Roller', mat:'Mat' };
+    const equipLabel = k => EQUIP_LABELS[k] || k;
+
+    function ownedFilter() {
+      const eq = (state.data && state.data.equipment) || { ...DEFAULT_EQUIPMENT };
+      const owned = k => k === 'handles' ? true : !!eq[k];
+      return EXERCISES.filter(x =>
+        x.equipment.every(owned) || (x.altEquipment && x.altEquipment.every(owned))
+      );
+    }
+
+    function scoreExercise(x, emphasize) {
+      const tags = new Set([...(x.goalTags || []), x.pattern, x.intensity]);
+      return emphasize.reduce((s, e) => s + (tags.has(e) ? 2 : 0), 0);
+    }
+
+    function scheme(hint, intensity) {
+      if (intensity === 'power') return { sets:3, reps:6, tempo:'explosive', restSec:90 };
+      if (intensity === 'core')  return { sets:3, reps:15, tempo:'controlled', restSec:45 };
+      if (hint === 'strength')   return intensity === 'compound' ? { sets:5, reps:5, tempo:'controlled', restSec:150 } : { sets:3, reps:8, tempo:'controlled', restSec:90 };
+      if (hint === 'hypertrophy')return { sets:4, reps:10, tempo:'controlled', restSec:75 };
+      if (hint === 'endurance')  return { sets:3, reps:18, tempo:'controlled', restSec:40 };
+      return intensity === 'compound' ? { sets:4, reps:8, tempo:'controlled', restSec:90 } : { sets:3, reps:12, tempo:'controlled', restSec:60 };
+    }
+
+    function pickMode(x, section, hint) {
+      const modes = x.tonalModes || [];
+      if (!modes.length) return null;
+      if (section === 'finisher' && modes.includes('burnout')) return 'burnout';
+      if (x.intensity === 'power' && modes.includes('chains')) return 'chains';
+      if (hint === 'strength' && modes.includes('spotter')) return 'spotter';
+      if (modes.includes('eccentric')) return 'eccentric';
+      return modes[0];
+    }
+
+    const loadTag = (section, intensity) =>
+      (section === 'warmup' || section === 'cooldown') ? 'light'
+      : (intensity === 'compound' || intensity === 'power') ? 'heavy' : 'moderate';
+
+    function cueFor(x, section) {
+      if (section === 'warmup') return 'Light effort — prime the movement';
+      if (section === 'cooldown') return 'Slow and controlled, focus on breathing';
+      if (x.intensity === 'power') return 'Move fast and explosive on the way up';
+      if (x.unilateral) return 'All reps one side, then switch';
+      return 'Controlled tempo, full range of motion';
+    }
+
+    function buildItem(x, section, hint) {
+      let sc;
+      if (section === 'warmup') sc = { sets:2, reps:10, tempo:'controlled', restSec:20 };
+      else if (section === 'cooldown') sc = { sets:1, reps:12, tempo:'controlled', restSec:0 };
+      else sc = scheme(hint, x.intensity);
+      return {
+        exerciseId: x.id, name: x.name, sets: sc.sets, reps: sc.reps, tempo: sc.tempo,
+        tonalMode: pickMode(x, section, hint), load: loadTag(section, x.intensity),
+        restSec: sc.restSec, cue: cueFor(x, section)
+      };
+    }
+
+    const titleFor = (goal, hint) => ({
+      golf:'Golf Power & Rotation', kicking:'Explosive Kicking Power', strength:'Strength Builder',
+      hypertrophy:'Muscle Builder', endurance:'Conditioning Circuit', upper:'Upper Body', lower:'Lower Body', core:'Core & Stability'
+    }[hint] || 'Custom Workout');
+
+    function setGenStatus(msg) { document.getElementById('gen-status').textContent = msg || ''; }
+
+    let currentWorkout = null;
+
+    function generateWorkout() {
+      if (!state.data) return;
+      const goal = document.getElementById('goalText').value.trim();
+      if (!goal) { setGenStatus('Describe what you want to train for first.'); return; }
+      const durationMin = +document.getElementById('goalDuration').value || 45;
+      const experience = document.getElementById('goalExp').value;
+
+      const candidates = ownedFilter();
+      if (candidates.length < 4) { setGenStatus('Not enough exercises for your equipment — enable more gear above.'); return; }
+
+      const hint = detectGoalHint(goal);
+      const emphasize = hint ? GOAL_HINTS[hint].emphasize : [];
+      const scored = candidates.map(x => ({ x, s: scoreExercise(x, emphasize) })).sort((a, b) => b.s - a.s);
+
+      const byIntensity = t => scored.filter(o => o.x.intensity === t).map(o => o.x);
+      const used = new Set();
+      const take = (arr, n) => { const out = []; for (const x of arr) { if (out.length >= n) break; if (!used.has(x.id)) { out.push(x); used.add(x.id); } } return out; };
+
+      const mainCount = Math.max(3, Math.min(6, Math.round(durationMin / 10)));
+      const sections = [];
+
+      const warm = take([...byIntensity('mobility'), ...byIntensity('core'), ...byIntensity('accessory')], 2);
+      if (warm.length) sections.push({ type:'warmup', name:'Warmup', items: warm.map(x => buildItem(x, 'warmup', hint)) });
+
+      const main = take(scored.map(o => o.x).filter(x => x.intensity !== 'mobility'), mainCount);
+      for (let i = 0; i < main.length; i += 3) {
+        const chunk = main.slice(i, i + 3);
+        sections.push({ type:'block', name: main.length > 3 ? 'Block ' + (i / 3 + 1) : 'Main Block',
+          items: chunk.map(x => buildItem(x, 'block', hint)) });
+      }
+
+      const finPool = [...byIntensity('core'), ...byIntensity('accessory'), ...byIntensity('power')].filter(x => !used.has(x.id));
+      finPool.sort((a, b) => ((b.tonalModes || []).includes('burnout') ? 1 : 0) - ((a.tonalModes || []).includes('burnout') ? 1 : 0));
+      const fin = take(finPool, 1);
+      if (fin.length) sections.push({ type:'finisher', name:'Finisher', items: fin.map(x => buildItem(x, 'finisher', hint)) });
+
+      const cool = byIntensity('mobility').find(x => !used.has(x.id)) || byIntensity('mobility')[0];
+      if (cool) sections.push({ type:'cooldown', name:'Cooldown', items:[buildItem(cool, 'cooldown', hint)] });
+
+      const eqOwned = k => k === 'handles' ? true : !!(state.data.equipment || {})[k];
+      const usedEquipmentFor = x => x.equipment.every(eqOwned) ? x.equipment
+        : (x.altEquipment && x.altEquipment.every(eqOwned)) ? x.altEquipment : [];
+      const equipmentUsed = Array.from(new Set(sections.flatMap(s => s.items).flatMap(it => {
+        const x = EXERCISES.find(e => e.id === it.exerciseId); return x ? usedEquipmentFor(x) : [];
+      })));
+
+      currentWorkout = { title: titleFor(goal, hint), goal, durationMin, experience, equipmentUsed, createdAt: Date.now(), sections };
+      setGenStatus(hint ? `Built around your "${hint}" goal.` : 'Built from your goal.');
+      renderWorkout(currentWorkout, true);
+    }
+
+    // Suggest a starting Tonal weight from the user's own logged data for that move.
+    function findLiftKey(name) {
+      const keys = Object.keys(state.data.lifts);
+      const lower = name.toLowerCase();
+      return keys.find(k => k.toLowerCase() === lower) ||
+             keys.find(k => lower.includes(k.toLowerCase()) || k.toLowerCase().includes(lower)) || null;
+    }
+    function suggestLoad(exName, tag) {
+      const key = findLiftKey(exName);
+      if (!key) return null;
+      const rows = state.data.lifts[key];
+      if (!rows || !rows.length) return null;
+      const recent = rows[rows.length - 1].tonal;
+      const pct = { light:0.55, moderate:0.75, heavy:0.9 }[tag] || 0.7;
+      return Math.round(recent * pct / 2.5) * 2.5;
+    }
+
+    function renderWorkout(workout, showSave) {
+      const sectionsHtml = workout.sections.map(sec => {
+        const itemsHtml = sec.items.map(it => {
+          const sug = suggestLoad(it.name, it.load);
+          const loadTxt = sug
+            ? `~${sug} lb <span style="color:var(--dim)">(from your data)</span>`
+            : `${it.load} load`;
+          const modeBadge = it.tonalMode ? `<span class="wo-badge mode">${esc(it.tonalMode)}</span>` : '';
+          return `<div class="wo-item">
+            <div class="wo-item-top">
+              <span class="wo-item-name">${esc(it.name)}</span>
+              <span class="wo-item-sets">${it.sets} × ${it.reps}</span>
+            </div>
+            <div class="wo-badges">${modeBadge}<span class="wo-badge load">${loadTxt}</span><span class="wo-badge">${esc(it.tempo)}</span></div>
+            <div class="wo-cue">${esc(it.cue)}</div>
+          </div>`;
+        }).join('');
+        const meta = sec.type === 'block' && sec.items[0] ? `rest ${sec.items[0].restSec || 90}s` : '';
+        return `<div class="wo-section">
+          <div class="wo-section-name"><span>${esc(sec.name)}</span><span class="wo-section-meta">${meta}</span></div>
+          ${itemsHtml}
+        </div>`;
+      }).join('');
+
+      document.getElementById('workout-result').innerHTML = `<div class="card">
+        <div class="workout-head"><div>
+          <div class="workout-title">${esc(workout.title)}</div>
+          <div class="workout-sub">${esc(workout.goal)} · ${workout.durationMin} min · ${(workout.equipmentUsed || []).map(equipLabel).join(', ') || 'Handles'}</div>
+        </div></div>
+        ${sectionsHtml}
+        ${showSave ? `<button class="btn btn-primary" style="margin-top:1rem;" onclick="saveCurrentWorkout()">Save workout</button>` : ''}
+        <button class="btn btn-ghost" onclick="closeWorkout()">Close</button>
+      </div>`;
+      document.getElementById('workout-result').scrollIntoView({ behavior:'smooth', block:'start' });
+    }
+    function closeWorkout() { document.getElementById('workout-result').innerHTML = ''; }
+
+    function saveCurrentWorkout() {
+      if (!currentWorkout) return;
+      state.data.workouts.unshift({ id: 'w' + Date.now(), ...currentWorkout });
+      saveData();
+      renderSavedWorkouts();
+      setGenStatus('Saved to your account.');
+    }
+    function openSavedWorkout(id) {
+      const w = (state.data.workouts || []).find(x => x.id === id);
+      if (w) { currentWorkout = w; renderWorkout(w, false); }
+    }
+    function deleteSavedWorkout(id) {
+      if (!confirm('Delete this saved workout?')) return;
+      state.data.workouts = (state.data.workouts || []).filter(x => x.id !== id);
+      saveData();
+      renderSavedWorkouts();
+    }
+    function renderSavedWorkouts() {
+      const el = document.getElementById('saved-workouts');
+      if (!el) return;
+      const ws = (state.data && state.data.workouts) || [];
+      if (!ws.length) { el.innerHTML = '<p class="empty">No saved workouts yet.</p>'; return; }
+      el.innerHTML = ws.map(w => `
+        <div class="saved-wo" onclick="openSavedWorkout('${w.id}')">
+          <div class="saved-wo-info">
+            <div class="saved-wo-title">${esc(w.title)}</div>
+            <div class="saved-wo-date">${esc(w.goal)} · ${new Date(w.createdAt).toLocaleDateString()}</div>
+          </div>
+          <button class="saved-wo-del" onclick="event.stopPropagation(); deleteSavedWorkout('${w.id}')">✕</button>
+        </div>`).join('');
+    }
+
+    function renderEquipment() {
+      const grid = document.getElementById('equip-grid');
+      if (!grid) return;
+      const eq = (state.data && state.data.equipment) || { ...DEFAULT_EQUIPMENT };
+      const items = [['handles','Smart Handles'], ['bar','Smart Bar'], ['rope','Rope'], ['bench','Bench'], ['ankleStraps','Ankle Straps'], ['roller','Foam Roller'], ['mat','Mat']];
+      grid.innerHTML = items.map(([k, label]) => {
+        const locked = k === 'handles';
+        const checked = locked ? true : !!eq[k];
+        return `<label class="equip-item${locked ? ' locked' : ''}">
+          <input type="checkbox" ${checked ? 'checked' : ''} ${locked ? 'disabled' : ''} onchange="toggleEquipment('${k}', this.checked)">
+          ${label}
+        </label>`;
+      }).join('');
+    }
+    function toggleEquipment(k, val) {
+      if (!state.data.equipment) state.data.equipment = { ...DEFAULT_EQUIPMENT };
+      state.data.equipment[k] = val;
+      saveData();
+    }
+
+    function renderWorkoutTab() {
+      renderEquipment();
+      renderSavedWorkouts();
     }
   </script>
 
