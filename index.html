@@ -216,6 +216,10 @@
 
     .workout-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 0.5rem; }
     .workout-title { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.01em; }
+    .workout-title-input { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.01em; color: var(--text); background: transparent; border: none; border-bottom: 1px dashed var(--border); width: 100%; padding: 0.15rem 0; margin: 0; }
+    .workout-title-input:hover { border-bottom-color: #444; }
+    .workout-title-input:focus { outline: none; border-bottom-color: var(--accent); }
+    .wo-saved-note { font-size: 0.75rem; color: var(--accent); margin-top: 1rem; }
     .workout-sub { font-size: 0.78rem; color: var(--muted); margin-top: 0.15rem; }
 
     .wo-section { margin-top: 1.25rem; }
@@ -1380,23 +1384,37 @@
       }).join('');
 
       document.getElementById('workout-result').innerHTML = `<div class="card">
-        <div class="workout-head"><div>
-          <div class="workout-title">${esc(workout.title)}</div>
+        <div class="workout-head"><div style="flex:1; min-width:0;">
+          <input class="workout-title-input" id="wo-title-input" value="${esc(workout.title)}" title="Click to rename"
+            aria-label="Workout name"
+            oninput="if (currentWorkout) currentWorkout.title = this.value" onchange="persistWorkoutTitle()" />
           <div class="workout-sub">${esc(workout.goal)} · ${workout.durationMin} min · ${(workout.equipmentUsed || []).map(equipLabel).join(', ') || 'Handles'}</div>
         </div></div>
         ${sectionsHtml}
-        ${showSave ? `<button class="btn btn-primary" style="margin-top:1rem;" onclick="saveCurrentWorkout()">Save workout</button>` : ''}
-        <button class="btn btn-ghost" onclick="closeWorkout()">Close</button>
+        ${showSave
+          ? `<button class="btn btn-primary" style="margin-top:1rem;" onclick="saveCurrentWorkout()">Save workout</button>`
+          : `<p class="wo-saved-note">✓ Saved — rename above anytime and it updates automatically.</p>`}
       </div>`;
       document.getElementById('workout-result').scrollIntoView({ behavior:'smooth', block:'start' });
     }
-    function closeWorkout() { document.getElementById('workout-result').innerHTML = ''; }
+    // Live-rename: if the shown workout is already saved, persist the edited title.
+    function persistWorkoutTitle() {
+      if (!currentWorkout) return;
+      const w = (state.data.workouts || []).find(x => x.id === currentWorkout.id);
+      if (w) { w.title = currentWorkout.title; saveData(); renderSavedWorkouts(); }
+    }
 
     function saveCurrentWorkout() {
       if (!currentWorkout) return;
-      state.data.workouts.unshift({ id: 'w' + Date.now(), ...currentWorkout });
+      let title = (currentWorkout.title || 'Workout').trim() || 'Workout';
+      const taken = new Set((state.data.workouts || []).map(w => w.title));
+      if (taken.has(title)) { let n = 2; while (taken.has(`${title} ${n}`)) n++; title = `${title} ${n}`; }
+      const w = { id: 'w' + Date.now(), ...currentWorkout, title };
+      state.data.workouts.unshift(w);
+      currentWorkout = w;                 // further title edits now persist to this record
       saveData();
       renderSavedWorkouts();
+      renderWorkout(w, false);            // re-render in saved mode with the de-duped name
       setGenStatus('Saved to your account.');
     }
     function openSavedWorkout(id) {
