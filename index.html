@@ -1455,6 +1455,7 @@
         <div class="wo-actions">
           ${showSave ? `<button class="btn btn-primary" onclick="saveCurrentWorkout()">Save workout</button>` : ''}
           <button class="btn btn-ghost" onclick="copyWorkout()">Copy for Tonal</button>
+          <button class="btn btn-ghost" onclick="closeWorkout()">Close</button>
         </div>
         <div id="wo-export"></div>
       </div>`;
@@ -1462,6 +1463,13 @@
     }
 
     function rerenderWorkout(scroll) { if (currentWorkout) renderWorkout(currentWorkout, !currentWorkout.id, scroll); }
+
+    // Dismiss the displayed workout (saved copies remain in "Saved workouts").
+    function closeWorkout() {
+      currentWorkout = null; woMenuOpen = false; replaceMode = false; swapTarget = null;
+      document.getElementById('workout-result').innerHTML = '';
+      setGenStatus('');
+    }
 
     // ── ⋯ menu ──
     function toggleWoMenu(ev) { if (ev) ev.stopPropagation(); woMenuOpen = !woMenuOpen; rerenderWorkout(false); }
