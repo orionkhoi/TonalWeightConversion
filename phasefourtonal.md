@@ -3,7 +3,7 @@
 Phase 4 builds on the Phase 3 Workout Creator. It loads the **complete Tonal movement
 catalog**, makes generated workouts more varied and goal-aware, and adds full **editing,
 swapping, exporting, and saved-state** handling. All changes live in the single-page app
-([`../index.html`](../index.html)) and sync per-user via the existing Supabase layer.
+(`index.html`) and sync per-user via the existing Supabase layer.
 
 ---
 
