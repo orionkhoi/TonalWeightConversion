@@ -220,6 +220,35 @@
     .workout-title-input:hover { border-bottom-color: #444; }
     .workout-title-input:focus { outline: none; border-bottom-color: var(--accent); }
     .wo-saved-note { font-size: 0.75rem; color: var(--accent); margin-top: 1rem; }
+
+    /* ⋯ menu */
+    .wo-menu-wrap { position: relative; flex-shrink: 0; }
+    .wo-menu-btn { background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 8px; width: 34px; height: 34px; cursor: pointer; font-size: 1.2rem; line-height: 1; }
+    .wo-menu-btn:hover { color: var(--text); border-color: #444; }
+    .wo-menu { position: absolute; right: 0; top: 40px; background: #1e1e1e; border: 1px solid var(--border); border-radius: 10px; padding: 0.3rem; min-width: 190px; z-index: 30; display: none; box-shadow: 0 10px 28px rgba(0,0,0,0.55); }
+    .wo-menu.open { display: block; }
+    .wo-menu button { display: block; width: 100%; text-align: left; background: transparent; border: none; color: var(--text); font-size: 0.85rem; padding: 0.55rem 0.7rem; border-radius: 7px; cursor: pointer; }
+    .wo-menu button:hover { background: #2a2a2a; }
+
+    .wo-saved-badge { display: inline-block; background: #14231a; border: 1px solid #245a2f; color: var(--accent); font-size: 0.72rem; font-weight: 600; border-radius: 6px; padding: 0.22rem 0.6rem; margin-bottom: 0.75rem; }
+    .wo-replace-hint { font-size: 0.75rem; color: var(--accent); margin-bottom: 0.6rem; }
+
+    .wo-item-right { display: flex; align-items: center; gap: 0.5rem; }
+    .wo-swap-btn { background: #1e1e1e; border: 1px solid var(--border); color: var(--accent); border-radius: 6px; cursor: pointer; font-size: 0.9rem; padding: 0.1rem 0.5rem; line-height: 1.3; }
+    .wo-swap-btn:hover { border-color: var(--accent); }
+
+    .swap-panel { margin-top: 0.65rem; border-top: 1px solid var(--border); padding-top: 0.6rem; display: flex; flex-direction: column; gap: 0.4rem; }
+    .swap-panel-head { display: flex; justify-content: space-between; align-items: center; font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.09em; }
+    .swap-cancel { background: none; border: none; color: var(--dim); cursor: pointer; font-size: 0.9rem; }
+    .swap-cancel:hover { color: #ff4444; }
+    .swap-opt { text-align: left; background: #161616; border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.65rem; color: var(--text); cursor: pointer; font-size: 0.85rem; display: flex; flex-direction: column; gap: 0.15rem; }
+    .swap-opt:hover { border-color: var(--accent); }
+    .swap-opt-m { font-size: 0.7rem; color: var(--muted); text-transform: capitalize; }
+    .swap-none { font-size: 0.8rem; color: var(--muted); }
+
+    .wo-actions { display: flex; gap: 0.6rem; margin-top: 1rem; flex-wrap: wrap; }
+    .wo-actions .btn { margin-top: 0; flex: 1; min-width: 140px; }
+    .wo-export-area { width: 100%; margin-top: 0.75rem; min-height: 170px; background: #111; border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-family: ui-monospace, Menlo, monospace; font-size: 0.78rem; line-height: 1.5; padding: 0.75rem; resize: vertical; }
     .workout-sub { font-size: 0.78rem; color: var(--muted); margin-top: 0.15rem; }
 
     .wo-section { margin-top: 1.25rem; }
@@ -1286,9 +1315,13 @@
     function setGenStatus(msg) { document.getElementById('gen-status').textContent = msg || ''; }
 
     let currentWorkout = null;
+    let woMenuOpen = false;      // ⋯ menu open?
+    let replaceMode = false;     // showing per-move swap buttons?
+    let swapTarget = null;       // {si, ii} of the move being swapped
 
     function generateWorkout() {
       if (!state.data) return;
+      woMenuOpen = false; replaceMode = false; swapTarget = null;
       const goal = document.getElementById('goalText').value.trim();
       if (!goal) { setGenStatus('Describe what you want to train for first.'); return; }
       const durationMin = +document.getElementById('goalDuration').value || 45;
@@ -1303,7 +1336,8 @@
       const emphasize = [...new Set([...(hint ? GOAL_HINTS[hint].emphasize : []), ...emphasisFromGoal(goal)])];
       // Random tiebreaker (< 1) so equally-relevant moves shuffle each run — regenerating
       // gives fresh variety while the goal emphasis (score steps of 2) still dominates.
-      const scored = candidates.map(x => ({ x, s: scoreExercise(x, emphasize) + Math.random() })).sort((a, b) => b.s - a.s);
+      // Wider random spread so successive workouts vary more (goal still dominates via score steps of 2).
+      const scored = candidates.map(x => ({ x, s: scoreExercise(x, emphasize) + Math.random() * 2 })).sort((a, b) => b.s - a.s);
 
       const byIntensity = t => scored.filter(o => o.x.intensity === t).map(o => o.x);
       const used = new Set();
@@ -1315,7 +1349,17 @@
       const warm = take([...byIntensity('mobility'), ...byIntensity('core'), ...byIntensity('accessory')], 2);
       if (warm.length) sections.push({ type:'warmup', name:'Warmup', items: warm.map(x => buildItem(x, 'warmup', hint)) });
 
-      const main = take(scored.map(o => o.x).filter(x => x.intensity !== 'mobility'), mainCount);
+      // Main moves: cap at 2 per primary muscle so a workout isn't three near-identical
+      // presses, which also makes workouts differ more run-to-run.
+      const main = [];
+      const muscleCount = {};
+      for (const x of scored.map(o => o.x).filter(x => x.intensity !== 'mobility')) {
+        if (main.length >= mainCount) break;
+        if (used.has(x.id)) continue;
+        const m = (x.primary || ['other'])[0];
+        if ((muscleCount[m] || 0) >= 2) continue;
+        main.push(x); used.add(x.id); muscleCount[m] = (muscleCount[m] || 0) + 1;
+      }
       for (let i = 0; i < main.length; i += 3) {
         const chunk = main.slice(i, i + 3);
         sections.push({ type:'block', name: main.length > 3 ? 'Block ' + (i / 3 + 1) : 'Main Block',
@@ -1359,21 +1403,24 @@
       return Math.round(recent * pct / 2.5) * 2.5;
     }
 
-    function renderWorkout(workout, showSave) {
-      const sectionsHtml = workout.sections.map(sec => {
-        const itemsHtml = sec.items.map(it => {
+    function renderWorkout(workout, showSave, scroll = true) {
+      const sectionsHtml = workout.sections.map((sec, si) => {
+        const itemsHtml = sec.items.map((it, ii) => {
           const sug = suggestLoad(it.name, it.load);
           const loadTxt = sug
             ? `~${sug} lb <span style="color:var(--dim)">(from your data)</span>`
             : `${it.load} load`;
           const modeBadge = it.tonalMode ? `<span class="wo-badge mode">${esc(it.tonalMode)}</span>` : '';
+          const swapBtn = replaceMode ? `<button class="wo-swap-btn" onclick="beginSwap(${si},${ii})" title="Replace this move">⇄</button>` : '';
+          const swapPanel = (swapTarget && swapTarget.si === si && swapTarget.ii === ii) ? renderSwapPanel(si, ii) : '';
           return `<div class="wo-item">
             <div class="wo-item-top">
               <span class="wo-item-name">${esc(it.name)}</span>
-              <span class="wo-item-sets">${it.sets} × ${it.reps}</span>
+              <span class="wo-item-right"><span class="wo-item-sets">${it.sets} × ${it.reps}</span>${swapBtn}</span>
             </div>
             <div class="wo-badges">${modeBadge}<span class="wo-badge load">${loadTxt}</span><span class="wo-badge">${esc(it.tempo)}</span></div>
             <div class="wo-cue">${esc(it.cue)}</div>
+            ${swapPanel}
           </div>`;
         }).join('');
         const meta = sec.type === 'block' && sec.items[0] ? `rest ${sec.items[0].restSec || 90}s` : '';
@@ -1383,20 +1430,112 @@
         </div>`;
       }).join('');
 
+      const desc = workout.description || `${workout.goal} · ${workout.durationMin} min · ${(workout.equipmentUsed || []).map(equipLabel).join(', ') || 'Handles'}`;
+
       document.getElementById('workout-result').innerHTML = `<div class="card">
-        <div class="workout-head"><div style="flex:1; min-width:0;">
-          <input class="workout-title-input" id="wo-title-input" value="${esc(workout.title)}" title="Click to rename"
-            aria-label="Workout name"
-            oninput="if (currentWorkout) currentWorkout.title = this.value" onchange="persistWorkoutTitle()" />
-          <div class="workout-sub">${esc(workout.goal)} · ${workout.durationMin} min · ${(workout.equipmentUsed || []).map(equipLabel).join(', ') || 'Handles'}</div>
-        </div></div>
+        <div class="workout-head">
+          <div style="flex:1; min-width:0;">
+            <input class="workout-title-input" id="wo-title-input" value="${esc(workout.title)}" title="Click to rename"
+              aria-label="Workout name"
+              oninput="if (currentWorkout) currentWorkout.title = this.value" onchange="persistWorkoutTitle()" />
+            <div class="workout-sub">${esc(desc)}</div>
+          </div>
+          <div class="wo-menu-wrap">
+            <button class="wo-menu-btn" onclick="toggleWoMenu(event)" aria-label="Workout options">⋯</button>
+            <div class="wo-menu${woMenuOpen ? ' open' : ''}">
+              <button onclick="menuRename()">Change name</button>
+              <button onclick="menuEditDescription()">Change description</button>
+              <button onclick="menuToggleReplace()">${replaceMode ? 'Done replacing moves' : 'Replace a move'}</button>
+            </div>
+          </div>
+        </div>
+        ${!showSave ? '<div class="wo-saved-badge">✓ Saved</div>' : ''}
+        ${replaceMode ? '<p class="wo-replace-hint">Tap ⇄ on any move to swap it for a similar one.</p>' : ''}
         ${sectionsHtml}
-        ${showSave
-          ? `<button class="btn btn-primary" style="margin-top:1rem;" onclick="saveCurrentWorkout()">Save workout</button>`
-          : `<p class="wo-saved-note">✓ Saved — rename above anytime and it updates automatically.</p>`}
+        <div class="wo-actions">
+          ${showSave ? `<button class="btn btn-primary" onclick="saveCurrentWorkout()">Save workout</button>` : ''}
+          <button class="btn btn-ghost" onclick="copyWorkout()">Copy for Tonal</button>
+        </div>
+        <div id="wo-export"></div>
       </div>`;
-      document.getElementById('workout-result').scrollIntoView({ behavior:'smooth', block:'start' });
+      if (scroll) document.getElementById('workout-result').scrollIntoView({ behavior:'smooth', block:'start' });
     }
+
+    function rerenderWorkout(scroll) { if (currentWorkout) renderWorkout(currentWorkout, !currentWorkout.id, scroll); }
+
+    // ── ⋯ menu ──
+    function toggleWoMenu(ev) { if (ev) ev.stopPropagation(); woMenuOpen = !woMenuOpen; rerenderWorkout(false); }
+    function closeWoMenu() { if (woMenuOpen) { woMenuOpen = false; rerenderWorkout(false); } }
+    document.addEventListener('click', closeWoMenu);
+
+    function menuRename() {
+      woMenuOpen = false; rerenderWorkout(false);
+      const i = document.getElementById('wo-title-input');
+      if (i) { i.focus(); i.select(); }
+    }
+    function menuEditDescription() {
+      woMenuOpen = false;
+      const cur = currentWorkout.description ||
+        `${currentWorkout.goal} · ${currentWorkout.durationMin} min · ${(currentWorkout.equipmentUsed || []).map(equipLabel).join(', ')}`;
+      const d = prompt('Workout description:', cur);
+      if (d !== null) { currentWorkout.description = d.trim(); persistIfSaved(); }
+      rerenderWorkout(false);
+    }
+    function menuToggleReplace() { woMenuOpen = false; replaceMode = !replaceMode; swapTarget = null; rerenderWorkout(false); }
+
+    // ── Replace a move with a similar one ──
+    function beginSwap(si, ii) { swapTarget = { si, ii }; rerenderWorkout(false); }
+    function cancelSwap() { swapTarget = null; rerenderWorkout(false); }
+
+    function similarMoves(exerciseId) {
+      const x = EXERCISES.find(e => e.id === exerciseId);
+      if (!x) return [];
+      const owned = k => k === 'handles' ? true : !!(state.data.equipment || {})[k];
+      const canDo = e => e.equipment.every(owned) || (e.altEquipment && e.altEquipment.every(owned));
+      const usedIds = new Set(currentWorkout.sections.flatMap(s => s.items.map(i => i.exerciseId)));
+      const xm = new Set(x.primary || []);
+      return EXERCISES
+        .filter(e => e.id !== x.id && !usedIds.has(e.id) && canDo(e))
+        .map(e => ({ e, ov: (e.primary || []).filter(m => xm.has(m)).length + (e.pattern === x.pattern ? 1 : 0) }))
+        .filter(o => o.ov > 0)
+        .sort((a, b) => b.ov - a.ov || a.e.name.localeCompare(b.e.name))
+        .slice(0, 8).map(o => o.e);
+    }
+    function renderSwapPanel(si, ii) {
+      const it = currentWorkout.sections[si].items[ii];
+      const alts = similarMoves(it.exerciseId);
+      const opts = alts.length
+        ? alts.map(e => `<button class="swap-opt" onclick="replaceMove(${si},${ii},'${e.id}')">${esc(e.name)}<span class="swap-opt-m">${esc((e.primary || []).map(m => m.replace(/_/g, ' ')).join(', '))}</span></button>`).join('')
+        : '<p class="swap-none">No similar unused moves available for your equipment.</p>';
+      return `<div class="swap-panel">
+        <div class="swap-panel-head"><span>Swap for a similar move</span><button class="swap-cancel" onclick="cancelSwap()">✕</button></div>
+        ${opts}
+      </div>`;
+    }
+    function replaceMove(si, ii, newId) {
+      const nx = EXERCISES.find(e => e.id === newId);
+      if (!nx) return;
+      const sec = currentWorkout.sections[si];
+      const it = sec.items[ii];
+      const hint = detectGoalHint(currentWorkout.goal || '');
+      it.exerciseId = nx.id; it.name = nx.name;
+      it.tonalMode = pickMode(nx, sec.type, hint);
+      it.cue = cueFor(nx, sec.type);
+      recomputeEquipment();
+      swapTarget = null;
+      persistIfSaved();
+      rerenderWorkout(false);
+    }
+    function recomputeEquipment() {
+      const owned = k => k === 'handles' ? true : !!(state.data.equipment || {})[k];
+      const usedEq = x => x.equipment.every(owned) ? x.equipment : (x.altEquipment && x.altEquipment.every(owned)) ? x.altEquipment : [];
+      currentWorkout.equipmentUsed = Array.from(new Set(currentWorkout.sections.flatMap(s => s.items).flatMap(it => {
+        const x = EXERCISES.find(e => e.id === it.exerciseId); return x ? usedEq(x) : [];
+      })));
+    }
+
+    function persistIfSaved() { if (currentWorkout && currentWorkout.id) { saveData(); renderSavedWorkouts(); } }
+
     // Live-rename: if the shown workout is already saved, persist the edited title.
     function persistWorkoutTitle() {
       if (!currentWorkout) return;
@@ -1404,17 +1543,45 @@
       if (w) { w.title = currentWorkout.title; saveData(); renderSavedWorkouts(); }
     }
 
+    // ── Export / copy as a Tonal build sheet ──
+    function workoutToText(w) {
+      let out = `${w.title}\n${w.description || (w.goal + ' · ' + w.durationMin + ' min · ' + (w.equipmentUsed || []).map(equipLabel).join(', '))}\n`;
+      w.sections.forEach(s => {
+        out += `\n${s.name.toUpperCase()}\n`;
+        s.items.forEach((it, i) => {
+          const parts = [`${it.sets}x${it.reps}`];
+          if (it.tonalMode) parts.push(it.tonalMode);
+          const sug = suggestLoad(it.name, it.load);
+          parts.push(sug ? `~${sug} lb` : `${it.load} load`);
+          out += `${i + 1}. ${it.name} — ${parts.join(', ')}\n`;
+        });
+      });
+      return out.trim();
+    }
+    function copyWorkout() {
+      const txt = workoutToText(currentWorkout);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(txt).then(() => setGenStatus('Copied to clipboard.'), () => {});
+      }
+      const box = document.getElementById('wo-export');
+      if (box) {
+        box.innerHTML = `<textarea class="wo-export-area" readonly onclick="this.select()">${esc(txt)}</textarea>`;
+        box.querySelector('textarea').select();
+      }
+    }
+
     function saveCurrentWorkout() {
-      if (!currentWorkout) return;
+      if (!currentWorkout || currentWorkout.id) return;   // guard against double-save
       let title = (currentWorkout.title || 'Workout').trim() || 'Workout';
       const taken = new Set((state.data.workouts || []).map(w => w.title));
       if (taken.has(title)) { let n = 2; while (taken.has(`${title} ${n}`)) n++; title = `${title} ${n}`; }
       const w = { id: 'w' + Date.now(), ...currentWorkout, title };
       state.data.workouts.unshift(w);
-      currentWorkout = w;                 // further title edits now persist to this record
+      currentWorkout = w;                 // further edits now persist to this record
+      woMenuOpen = false; replaceMode = false; swapTarget = null;
       saveData();
       renderSavedWorkouts();
-      renderWorkout(w, false);            // re-render in saved mode with the de-duped name
+      renderWorkout(w, false);            // re-render as a saved page (✓ Saved, no Save button)
       setGenStatus('Saved to your account.');
     }
     function openSavedWorkout(id) {
