@@ -939,6 +939,39 @@
       return null;
     }
 
+    // Words in the request → emphasis tags (muscles / patterns / goalTags used in EXERCISES).
+    // This makes different requests select genuinely different moves, not just the 8 hints.
+    const EMPHASIS_KEYWORDS = {
+      chest:['chest','push'], pec:['chest','push'], push:['push'], press:['push'],
+      back:['pull','lats','upper_back'], lat:['lats','pull'], row:['pull'], pull:['pull'], posture:['pull','upper_back'],
+      shoulder:['shoulders','push'], delt:['shoulders'], overhead:['push','shoulders'],
+      arm:['arms','biceps','triceps'], bicep:['biceps','arms'], tricep:['triceps','arms'], curl:['biceps','arms'],
+      leg:['legs','squat','lunge','quads'], quad:['quads','squat','legs'], squat:['squat','legs'],
+      glute:['glutes','hip_extension'], butt:['glutes','hip_extension'],
+      ham:['hamstrings','hinge','posterior_chain'], hamstring:['hamstrings','hinge','posterior_chain'],
+      calf:['calves'], hinge:['hinge','posterior_chain'], deadlift:['hinge','posterior_chain'],
+      core:['core','anti_rotation','core_flexion'], ab:['core','core_flexion'], abs:['core','core_flexion'],
+      oblique:['obliques','rotation'], rotation:['rotation'], rotational:['rotation'], twist:['rotation'],
+      balance:['stability','single_leg'], stability:['stability','anti_rotation'], stable:['stability'],
+      power:['power'], explosive:['power'], speed:['power','power'], fast:['power'], jump:['power','squat','single_leg'],
+      hip:['hip_flexion','hip_extension','glutes'], kick:['hip_flexion','hip_extension','adduction','power'],
+      golf:['rotation','anti_rotation','posterior_chain'], swing:['rotation','power'],
+      strength:['strength','compound'], strong:['strength','compound'], heavy:['strength','compound'],
+      muscle:['hypertrophy','compound','accessory'], size:['hypertrophy'], bigger:['hypertrophy'], mass:['hypertrophy'],
+      tone:['endurance','accessory'], lean:['endurance','accessory'], endurance:['endurance','accessory'],
+      conditioning:['endurance','core'], cardio:['endurance'],
+      upper:['upper','push','pull'], lower:['lower','legs','squat','hinge'], full:['compound']
+    };
+
+    function emphasisFromGoal(goal) {
+      const g = goal.toLowerCase();
+      const set = new Set();
+      for (const [kw, tags] of Object.entries(EMPHASIS_KEYWORDS)) {
+        if (g.includes(kw)) tags.forEach(t => set.add(t));
+      }
+      return [...set];
+    }
+
     const EQUIP_LABELS = { handles:'Handles', bar:'Bar', rope:'Rope', bench:'Bench', ankleStraps:'Ankle Straps', roller:'Roller', mat:'Mat' };
     const equipLabel = k => EQUIP_LABELS[k] || k;
 
@@ -951,7 +984,7 @@
     }
 
     function scoreExercise(x, emphasize) {
-      const tags = new Set([...(x.goalTags || []), x.pattern, x.intensity]);
+      const tags = new Set([...(x.goalTags || []), ...(x.primary || []), x.pattern, x.intensity]);
       return emphasize.reduce((s, e) => s + (tags.has(e) ? 2 : 0), 0);
     }
 
@@ -1018,7 +1051,9 @@
       if (candidates.length < 4) { setGenStatus('Not enough exercises for your equipment — enable more gear above.'); return; }
 
       const hint = detectGoalHint(goal);
-      const emphasize = hint ? GOAL_HINTS[hint].emphasize : [];
+      // Emphasis comes from BOTH the detected hint and the specific words in the request,
+      // so two different requests select genuinely different moves.
+      const emphasize = [...new Set([...(hint ? GOAL_HINTS[hint].emphasize : []), ...emphasisFromGoal(goal)])];
       // Random tiebreaker (< 1) so equally-relevant moves shuffle each run — regenerating
       // gives fresh variety while the goal emphasis (score steps of 2) still dominates.
       const scored = candidates.map(x => ({ x, s: scoreExercise(x, emphasize) + Math.random() })).sort((a, b) => b.s - a.s);
