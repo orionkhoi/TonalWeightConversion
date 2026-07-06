@@ -251,6 +251,23 @@
     .saved-wo-date { font-size: 0.72rem; color: var(--dim); margin-top: 0.15rem; }
     .saved-wo-del { background: none; border: none; color: var(--dim); cursor: pointer; font-size: 1rem; }
     .saved-wo-del:hover { color: #ff4444; }
+
+    /* ── Movement Library ── */
+    .lib-controls { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
+    .lib-controls input[type="text"] { flex: 1; min-width: 180px; margin-bottom: 0; }
+    .lib-toggle { display: flex; align-items: center; gap: 0.4rem; font-size: 0.78rem; color: var(--muted); text-transform: none; letter-spacing: 0; margin: 0; white-space: nowrap; cursor: pointer; }
+    .lib-toggle input { width: auto; margin: 0; accent-color: var(--accent); cursor: pointer; }
+    .lib-count { font-size: 0.72rem; color: var(--dim); margin: 0.75rem 0 0.5rem; }
+    .lib-list { display: flex; flex-direction: column; gap: 0.5rem; max-height: 460px; overflow-y: auto; }
+    .lib-item { background: #111; border: 1px solid var(--border); border-radius: 10px; padding: 0.7rem 0.9rem; }
+    .lib-item.lib-locked { opacity: 0.5; }
+    .lib-item-head { display: flex; justify-content: space-between; align-items: baseline; gap: 0.75rem; }
+    .lib-name { font-size: 0.9rem; font-weight: 600; }
+    .lib-eqs { display: flex; gap: 0.3rem; flex-wrap: wrap; justify-content: flex-end; }
+    .lib-eq { font-size: 0.65rem; background: #1e1e1e; border: 1px solid var(--border); border-radius: 5px; padding: 0.12rem 0.4rem; color: #9a9a9a; white-space: nowrap; }
+    .lib-eq.alt { color: var(--dim); font-style: italic; }
+    .lib-meta { font-size: 0.74rem; color: var(--muted); margin-top: 0.35rem; text-transform: capitalize; }
+    .lib-need { color: #c78; text-transform: none; }
   </style>
 </head>
 <body>
@@ -454,6 +471,16 @@
         <div id="saved-workouts">
           <p class="empty">No saved workouts yet.</p>
         </div>
+      </div>
+
+      <div class="card">
+        <p class="card-title">Movement library</p>
+        <div class="lib-controls">
+          <input type="text" id="lib-search" placeholder="Search moves, muscles, patterns…" autocomplete="off" oninput="renderLibrary()" />
+          <label class="lib-toggle"><input type="checkbox" id="lib-owned" onchange="renderLibrary()"> Only my equipment</label>
+        </div>
+        <p class="lib-count" id="lib-count"></p>
+        <div class="lib-list" id="lib-list"></div>
       </div>
     </div>
 
@@ -905,7 +932,115 @@
         tonalModes:[], goalTags:['mobility','warmup','core'], intensity:'mobility' },
       { id:'worlds_greatest_stretch', name:"World's Greatest Stretch", pattern:'full_mobility', primary:['hips','t_spine'],
         equipment:[], optionalEquipment:['mat'], position:'floor', unilateral:true,
-        tonalModes:[], goalTags:['mobility','warmup'], intensity:'mobility' }
+        tonalModes:[], goalTags:['mobility','warmup'], intensity:'mobility' },
+
+      // ── Push / chest / shoulders ──
+      { id:'chest_fly', name:'Chest Fly', pattern:'horizontal_push', primary:['chest'],
+        equipment:['handles'], optionalEquipment:['bench'], position:'standing', unilateral:false,
+        tonalModes:['eccentric','burnout'], goalTags:['chest','push','hypertrophy','upper','accessory'], intensity:'accessory' },
+      { id:'decline_press', name:'Decline Chest Press', pattern:'horizontal_push', primary:['chest','triceps'],
+        equipment:['handles'], optionalEquipment:['bench'], position:'standing', unilateral:false,
+        tonalModes:['eccentric','burnout'], goalTags:['chest','push','upper'], intensity:'compound' },
+      { id:'arnold_press', name:'Arnold Press', pattern:'vertical_push', primary:['shoulders','triceps'],
+        equipment:['handles'], position:'standing', unilateral:false,
+        tonalModes:['eccentric'], goalTags:['shoulders','push','upper','hypertrophy'], intensity:'compound' },
+      { id:'front_raise', name:'Front Raise', pattern:'shoulder_flexion', primary:['front_delt','shoulders'],
+        equipment:['handles'], position:'standing', unilateral:false,
+        tonalModes:['burnout'], goalTags:['shoulders','upper','accessory'], intensity:'accessory' },
+      { id:'upright_row', name:'Upright Row', pattern:'vertical_pull', primary:['shoulders','traps'],
+        equipment:['handles'], position:'standing', unilateral:false,
+        tonalModes:['eccentric'], goalTags:['shoulders','pull','upper','accessory'], intensity:'accessory' },
+      { id:'rear_delt_fly', name:'Rear Delt Fly', pattern:'horizontal_pull', primary:['rear_delt'],
+        equipment:['handles'], position:'standing', unilateral:false,
+        tonalModes:[], goalTags:['shoulders','pull','upper','stability','accessory'], intensity:'accessory' },
+
+      // ── Pull / back ──
+      { id:'single_arm_row', name:'Single-Arm Row', pattern:'horizontal_pull', primary:['lats','upper_back'],
+        equipment:['handles'], position:'standing', unilateral:true,
+        tonalModes:['eccentric'], goalTags:['pull','upper','strength'], intensity:'compound' },
+      { id:'straight_arm_pulldown', name:'Straight-Arm Pulldown', pattern:'vertical_pull', primary:['lats'],
+        equipment:['handles'], position:'standing', unilateral:false,
+        tonalModes:['burnout'], goalTags:['lats','pull','upper','accessory'], intensity:'accessory' },
+      { id:'shrug', name:'Shrug', pattern:'scapular_elevation', primary:['traps'],
+        equipment:['handles'], position:'standing', unilateral:false,
+        tonalModes:['burnout'], goalTags:['upper','pull','accessory'], intensity:'accessory' },
+      { id:'cable_pullover', name:'Cable Pullover', pattern:'vertical_pull', primary:['lats','chest'],
+        equipment:['handles'], optionalEquipment:['bench'], position:'standing', unilateral:false,
+        tonalModes:['eccentric'], goalTags:['lats','pull','upper','accessory'], intensity:'accessory' },
+
+      // ── Arms ──
+      { id:'hammer_curl', name:'Hammer Curl', pattern:'elbow_flexion', primary:['biceps','forearms'],
+        equipment:['handles'], position:'standing', unilateral:false,
+        tonalModes:['burnout','eccentric'], goalTags:['arms','upper','hypertrophy','accessory'], intensity:'accessory' },
+      { id:'overhead_tricep_ext', name:'Overhead Tricep Extension', pattern:'elbow_extension', primary:['triceps'],
+        equipment:['handles'], optionalEquipment:['rope'], position:'standing', unilateral:false,
+        tonalModes:['burnout'], goalTags:['arms','triceps','upper','accessory'], intensity:'accessory' },
+      { id:'tricep_kickback', name:'Tricep Kickback', pattern:'elbow_extension', primary:['triceps'],
+        equipment:['handles'], position:'standing', unilateral:true,
+        tonalModes:['burnout'], goalTags:['arms','triceps','upper','accessory'], intensity:'accessory' },
+
+      // ── Legs / lower ──
+      { id:'goblet_squat', name:'Goblet Squat', pattern:'squat', primary:['quads','glutes'],
+        equipment:['handles'], position:'standing', unilateral:false,
+        tonalModes:['eccentric'], goalTags:['legs','squat','lower','strength','compound'], intensity:'compound' },
+      { id:'deadlift', name:'Deadlift', pattern:'hinge', primary:['glutes','hamstrings','lower_back'],
+        equipment:['bar'], altEquipment:['handles'], position:'standing', unilateral:false,
+        tonalModes:['eccentric','spotter','chains'], goalTags:['strength','posterior_chain','hinge','power','compound'], intensity:'compound' },
+      { id:'sumo_deadlift', name:'Sumo Deadlift', pattern:'hinge', primary:['glutes','adductors','hamstrings'],
+        equipment:['bar'], altEquipment:['handles'], position:'standing', unilateral:false,
+        tonalModes:['eccentric','spotter'], goalTags:['strength','glutes','posterior_chain','hinge','compound'], intensity:'compound' },
+      { id:'forward_lunge', name:'Forward Lunge', pattern:'lunge', primary:['quads','glutes'],
+        equipment:['handles'], position:'standing', unilateral:true,
+        tonalModes:['eccentric'], goalTags:['legs','single_leg','lower','sport'], intensity:'compound' },
+      { id:'lateral_lunge', name:'Lateral Lunge', pattern:'lunge', primary:['quads','adductors','glutes'],
+        equipment:['handles'], position:'standing', unilateral:true,
+        tonalModes:['eccentric'], goalTags:['legs','single_leg','lower','adduction','sport'], intensity:'compound' },
+      { id:'hip_thrust', name:'Hip Thrust', pattern:'hip_extension', primary:['glutes','hamstrings'],
+        equipment:['handles'], optionalEquipment:['bench'], position:'floor', unilateral:false,
+        tonalModes:['eccentric'], goalTags:['glutes','posterior_chain','lower','strength'], intensity:'compound' },
+      { id:'good_morning', name:'Good Morning', pattern:'hinge', primary:['hamstrings','lower_back'],
+        equipment:['bar'], altEquipment:['handles'], position:'standing', unilateral:false,
+        tonalModes:['eccentric'], goalTags:['hamstrings','posterior_chain','hinge','accessory'], intensity:'accessory' },
+      { id:'glute_kickback', name:'Cable Glute Kickback', pattern:'hip_extension', primary:['glutes'],
+        equipment:['ankleStraps'], position:'standing', unilateral:true,
+        tonalModes:['burnout'], goalTags:['glutes','hip_extension','sport','accessory'], intensity:'accessory' },
+      { id:'fire_hydrant', name:'Fire Hydrant', pattern:'abduction', primary:['glutes'],
+        equipment:['ankleStraps'], position:'standing', unilateral:true,
+        tonalModes:[], goalTags:['glutes','stability','sport','accessory'], intensity:'accessory' },
+
+      // ── Core ──
+      { id:'woodchop_low_high', name:'Woodchop (low → high)', pattern:'rotation', primary:['obliques','core'],
+        equipment:['handles'], position:'standing', unilateral:true,
+        tonalModes:['chains'], goalTags:['rotation','power','golf','core','sport'], intensity:'power' },
+      { id:'russian_twist', name:'Russian Twist', pattern:'rotation', primary:['obliques','core'],
+        equipment:['handles'], optionalEquipment:['mat'], position:'floor', unilateral:true,
+        tonalModes:[], goalTags:['core','obliques','rotation'], intensity:'core' },
+      { id:'cable_side_bend', name:'Cable Side Bend', pattern:'lateral_flexion', primary:['obliques'],
+        equipment:['handles'], position:'standing', unilateral:true,
+        tonalModes:['burnout'], goalTags:['core','obliques','accessory'], intensity:'core' },
+      { id:'cable_crunch', name:'Cable Crunch', pattern:'core_flexion', primary:['abs','core'],
+        equipment:['handles'], optionalEquipment:['rope'], position:'floor', unilateral:false,
+        tonalModes:['burnout'], goalTags:['core','core_flexion','hypertrophy'], intensity:'core' },
+      { id:'dead_bug', name:'Dead Bug', pattern:'anti_extension', primary:['core'],
+        equipment:[], optionalEquipment:['mat'], position:'floor', unilateral:false,
+        tonalModes:[], goalTags:['core','stability','anti_rotation'], intensity:'core' },
+      { id:'bird_dog', name:'Bird Dog', pattern:'anti_rotation', primary:['core','glutes'],
+        equipment:[], optionalEquipment:['mat'], position:'floor', unilateral:true,
+        tonalModes:[], goalTags:['core','stability','anti_rotation'], intensity:'core' },
+      { id:'plank', name:'Plank', pattern:'anti_extension', primary:['core'],
+        equipment:[], optionalEquipment:['mat'], position:'floor', unilateral:false,
+        tonalModes:[], goalTags:['core','stability','endurance'], intensity:'core' },
+      { id:'mountain_climber', name:'Mountain Climber', pattern:'core_flexion', primary:['core','hip_flexors'],
+        equipment:[], optionalEquipment:['mat'], position:'floor', unilateral:false,
+        tonalModes:[], goalTags:['core','endurance','conditioning'], intensity:'core' },
+
+      // ── Mobility / warmup ──
+      { id:'shoulder_dislocates', name:'Shoulder Dislocates', pattern:'shoulder_mobility', primary:['shoulders'],
+        equipment:['handles'], position:'standing', unilateral:false,
+        tonalModes:[], goalTags:['mobility','warmup','upper'], intensity:'mobility' },
+      { id:'hip_opener', name:'90/90 Hip Opener', pattern:'hip_mobility', primary:['hips'],
+        equipment:[], optionalEquipment:['mat'], position:'floor', unilateral:true,
+        tonalModes:[], goalTags:['mobility','warmup','lower'], intensity:'mobility' }
     ];
 
     const GOAL_HINTS = {
@@ -1201,9 +1336,47 @@
       saveData();
     }
 
+    function renderLibrary() {
+      const list = document.getElementById('lib-list');
+      if (!list) return;
+      const q = (document.getElementById('lib-search').value || '').toLowerCase().trim();
+      const ownedOnly = document.getElementById('lib-owned').checked;
+      const eq = (state.data && state.data.equipment) || { ...DEFAULT_EQUIPMENT };
+      const owned = k => k === 'handles' ? true : !!eq[k];
+      const canDo = x => x.equipment.every(owned) || (x.altEquipment && x.altEquipment.every(owned));
+
+      let items = EXERCISES.slice().sort((a, b) => a.name.localeCompare(b.name));
+      if (ownedOnly) items = items.filter(canDo);
+      if (q) items = items.filter(x =>
+        x.name.toLowerCase().includes(q) ||
+        (x.primary || []).some(m => m.replace(/_/g, ' ').includes(q)) ||
+        (x.goalTags || []).some(t => t.replace(/_/g, ' ').includes(q)) ||
+        x.pattern.replace(/_/g, ' ').includes(q)
+      );
+
+      document.getElementById('lib-count').textContent = `${items.length} of ${EXERCISES.length} movements`;
+      if (!items.length) { list.innerHTML = '<p class="empty">No movements match your search.</p>'; return; }
+
+      list.innerHTML = items.map(x => {
+        const doable = canDo(x);
+        const eqNames = x.equipment.length ? x.equipment.map(equipLabel) : ['Bodyweight'];
+        const eqBadges = eqNames.map(n => `<span class="lib-eq">${esc(n)}</span>`).join('') +
+          (x.altEquipment ? `<span class="lib-eq alt">or ${x.altEquipment.map(equipLabel).join('/')}</span>` : '');
+        const muscles = (x.primary || []).map(m => m.replace(/_/g, ' ')).join(', ');
+        return `<div class="lib-item${doable ? '' : ' lib-locked'}">
+          <div class="lib-item-head">
+            <span class="lib-name">${esc(x.name)}</span>
+            <span class="lib-eqs">${eqBadges}</span>
+          </div>
+          <div class="lib-meta">${esc(x.pattern.replace(/_/g, ' '))} · ${esc(muscles)}${doable ? '' : ' · <span class="lib-need">gear not enabled</span>'}</div>
+        </div>`;
+      }).join('');
+    }
+
     function renderWorkoutTab() {
       renderEquipment();
       renderSavedWorkouts();
+      renderLibrary();
     }
   </script>
 
