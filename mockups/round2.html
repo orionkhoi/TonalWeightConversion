@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TonalPlan — Redesign Round 2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
+  :root{ --accent:#4F46E5; --tint:#EEF0FF; --tint-line:#E2E4FB; --ink:#17181A; --muted:#8f8f8a; }
+  body{ font-family:'Inter',-apple-system,sans-serif; background:#EFEEEA; color:var(--ink); -webkit-font-smoothing:antialiased; padding:2.5rem; }
+  .stage{ max-width:520px; margin:0 auto; }
+  .stage-head{ text-align:center; margin-bottom:1.8rem; }
+  .stage-head .k{ font-size:.72rem; letter-spacing:.16em; text-transform:uppercase; color:#9a9a95; font-weight:600; }
+  .stage-head h1{ font-size:1.5rem; font-weight:600; letter-spacing:-.02em; margin-top:.35rem; }
+
+  .phone{ width:400px; margin:0 auto; background:#FFFFFF; border:1px solid #E7E6E1; border-radius:30px; padding:1.6rem 1.4rem 1.7rem; box-shadow:0 20px 50px rgba(30,30,30,.08); }
+  .topbar{ display:flex; align-items:center; justify-content:space-between; margin-bottom:1.4rem; }
+  .brand{ font-size:.95rem; font-weight:600; letter-spacing:-.01em; }
+  .brand span{ color:var(--accent); }
+  .avatar{ width:30px; height:30px; border-radius:50%; background:var(--tint); color:var(--accent); font-size:.72rem; font-weight:600; display:flex; align-items:center; justify-content:center; }
+
+  .seg{ display:flex; background:#F3F2EE; border-radius:12px; padding:4px; margin-bottom:1.4rem; }
+  .seg button{ flex:1; border:none; background:transparent; font-family:inherit; font-size:.8rem; font-weight:500; color:#8a8a85; padding:.5rem 0; border-radius:9px; cursor:pointer; }
+  .seg button.on{ background:#fff; color:var(--ink); box-shadow:0 1px 3px rgba(0,0,0,.08); }
+
+  .wo-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:.75rem; }
+  .wo-title{ font-size:1.5rem; font-weight:700; letter-spacing:-.03em; border-bottom:1px dashed #dededa; padding-bottom:2px; }
+  .wo-sub{ font-size:.8rem; color:var(--muted); margin-top:.35rem; }
+  .dots{ flex-shrink:0; width:34px; height:34px; border-radius:10px; border:1px solid #EBEAE5; background:#FAFAF8; color:#9a9a95; font-size:1.1rem; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+
+  .sec-label{ font-size:.7rem; letter-spacing:.11em; text-transform:uppercase; color:var(--accent); font-weight:600; margin:1.5rem 0 .7rem; display:flex; justify-content:space-between; }
+  .sec-label .rest{ color:#b0b0ab; }
+
+  .item{ border:1px solid #EDECE7; border-radius:14px; padding:.85rem 1rem; margin-bottom:.6rem; }
+  .item-top{ display:flex; align-items:baseline; justify-content:space-between; gap:.75rem; }
+  .item-name{ font-size:.98rem; font-weight:600; letter-spacing:-.01em; }
+  .item-sets{ font-size:.92rem; font-weight:700; color:var(--accent); white-space:nowrap; letter-spacing:-.01em; }
+  .badges{ display:flex; gap:.4rem; flex-wrap:wrap; margin-top:.55rem; }
+  .badge{ font-size:.7rem; font-weight:500; border-radius:7px; padding:.2rem .5rem; }
+  .badge.mode{ background:var(--tint); color:var(--accent); }
+  .badge.load{ background:#F3F2EE; color:#6f6f6a; }
+  .badge.tempo{ background:#F3F2EE; color:#6f6f6a; }
+  .cue{ font-size:.78rem; color:#9a9a95; margin-top:.5rem; }
+
+  .actions{ display:flex; gap:.6rem; margin-top:1.3rem; }
+  .btn{ flex:1; border:none; font-family:inherit; font-size:.9rem; font-weight:600; padding:.85rem; border-radius:13px; cursor:pointer; }
+  .btn-primary{ background:var(--accent); color:#fff; }
+  .btn-ghost{ background:#fff; border:1px solid #E7E6E1; color:#4a4a46; }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="stage-head">
+      <p class="k">Redesign · Round 2</p>
+      <h1>Workout screen · Indigo</h1>
+    </div>
+
+    <div class="phone">
+      <div class="topbar">
+        <div class="brand">Tonal<span>Plan</span></div>
+        <div class="avatar">O</div>
+      </div>
+      <div class="seg">
+        <button>Convert</button>
+        <button>My Lifts</button>
+        <button class="on">Workout</button>
+      </div>
+
+      <div class="wo-head">
+        <div>
+          <div class="wo-title">Golf Power &amp; Rotation</div>
+          <div class="wo-sub">golf drive distance · 45 min · Handles, Ankle Straps</div>
+        </div>
+        <div class="dots">⋯</div>
+      </div>
+
+      <div class="sec-label"><span>Warmup</span></div>
+      <div class="item">
+        <div class="item-top"><span class="item-name">Thoracic Rotation</span><span class="item-sets">2 × 10</span></div>
+        <div class="badges"><span class="badge load">light load</span><span class="badge tempo">controlled</span></div>
+        <div class="cue">Light effort — prime the movement</div>
+      </div>
+
+      <div class="sec-label"><span>Block 1</span><span class="rest">rest 90s</span></div>
+      <div class="item">
+        <div class="item-top"><span class="item-name">Woodchop (high → low)</span><span class="item-sets">3 × 8</span></div>
+        <div class="badges"><span class="badge mode">chains</span><span class="badge load">heavy load</span><span class="badge tempo">explosive</span></div>
+        <div class="cue">Move fast and explosive on the way up</div>
+      </div>
+      <div class="item">
+        <div class="item-top"><span class="item-name">Romanian Deadlift</span><span class="item-sets">4 × 6</span></div>
+        <div class="badges"><span class="badge mode">eccentric</span><span class="badge load">~90 lb</span><span class="badge tempo">controlled</span></div>
+        <div class="cue">Controlled tempo, full range of motion</div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-primary">Save workout</button>
+        <button class="btn btn-ghost">Copy for Tonal</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

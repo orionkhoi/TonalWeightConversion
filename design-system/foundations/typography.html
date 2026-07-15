@@ -1,0 +1,28 @@
+<!-- @dsCard group="Foundations" name="Typography" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<style>
+  :root{ --bg:#0f0f0f; --border:#2a2a2a; --accent:#c8ff00; --text:#f0f0f0; --muted:#8a8a8a; --dim:#555; --font:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; }
+  body{ margin:0; padding:2rem; background:var(--bg); font-family:var(--font); color:var(--text); max-width:620px; }
+  .row{ display:flex; align-items:baseline; gap:1.25rem; padding:.7rem 0; border-bottom:1px solid var(--border); }
+  .row:last-child{ border-bottom:none; }
+  .tag{ width:120px; flex-shrink:0; font-size:.72rem; color:var(--dim); font-family:ui-monospace,Menlo,monospace; }
+  .logo{ font-size:.72rem; letter-spacing:.22em; text-transform:uppercase; color:var(--accent); font-weight:700; }
+  .h1{ font-size:2rem; font-weight:700; letter-spacing:-.02em; }
+  .h2{ font-size:1.25rem; font-weight:700; }
+  .label{ font-size:.75rem; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); }
+  .body{ font-size:.95rem; color:#d8d8d8; }
+  .small{ font-size:.78rem; color:var(--muted); }
+</style>
+</head>
+<body>
+  <div class="row"><span class="tag">logo / eyebrow</span><span class="logo">TONALPLAN</span></div>
+  <div class="row"><span class="tag">h1</span><span class="h1">Weight Converter</span></div>
+  <div class="row"><span class="tag">h2 / title</span><span class="h2">Create a workout</span></div>
+  <div class="row"><span class="tag">label</span><span class="label">Tonal weight (lbs)</span></div>
+  <div class="row"><span class="tag">body</span><span class="body">Convert Tonal digital weight to its free-weight equivalent.</span></div>
+  <div class="row"><span class="tag">small</span><span class="small">From your logged data</span></div>
+</body>
+</html>

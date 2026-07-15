@@ -1,0 +1,30 @@
+<!-- @dsCard group="Foundations" name="Color" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<style>
+  :root{ --bg:#0f0f0f; --border:#2a2a2a; --text:#f0f0f0; --muted:#8a8a8a; --font:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; }
+  body{ margin:0; padding:2rem; background:var(--bg); font-family:var(--font); }
+  .grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:1rem; max-width:680px; }
+  .sw{ border:1px solid var(--border); border-radius:12px; overflow:hidden; background:#111; }
+  .chip{ height:72px; }
+  .meta{ padding:.55rem .7rem; }
+  .name{ font-size:.8rem; font-weight:600; color:var(--text); }
+  .hex{ font-size:.72rem; color:var(--muted); font-family:ui-monospace,Menlo,monospace; margin-top:.15rem; }
+</style>
+</head>
+<body>
+  <div class="grid">
+    <div class="sw"><div class="chip" style="background:#0f0f0f"></div><div class="meta"><div class="name">Background</div><div class="hex">#0F0F0F</div></div></div>
+    <div class="sw"><div class="chip" style="background:#1a1a1a"></div><div class="meta"><div class="name">Surface</div><div class="hex">#1A1A1A</div></div></div>
+    <div class="sw"><div class="chip" style="background:#111"></div><div class="meta"><div class="name">Surface inset</div><div class="hex">#111111</div></div></div>
+    <div class="sw"><div class="chip" style="background:#2a2a2a"></div><div class="meta"><div class="name">Border</div><div class="hex">#2A2A2A</div></div></div>
+    <div class="sw"><div class="chip" style="background:#c8ff00"></div><div class="meta"><div class="name">Accent</div><div class="hex">#C8FF00</div></div></div>
+    <div class="sw"><div class="chip" style="background:#f0f0f0"></div><div class="meta"><div class="name">Text</div><div class="hex">#F0F0F0</div></div></div>
+    <div class="sw"><div class="chip" style="background:#8a8a8a"></div><div class="meta"><div class="name">Muted</div><div class="hex">#8A8A8A</div></div></div>
+    <div class="sw"><div class="chip" style="background:#f5b301"></div><div class="meta"><div class="name">Warn / saving</div><div class="hex">#F5B301</div></div></div>
+    <div class="sw"><div class="chip" style="background:#ff4444"></div><div class="meta"><div class="name">Danger</div><div class="hex">#FF4444</div></div></div>
+  </div>
+</body>
+</html>

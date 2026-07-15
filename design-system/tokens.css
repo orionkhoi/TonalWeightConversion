@@ -1,0 +1,32 @@
+/* TonalPlan — Design Tokens
+   The single source of truth for the app's look. Import this, or copy the
+   :root block into a component. */
+
+:root {
+  /* ── Color ── */
+  --tp-bg:       #0f0f0f;  /* app background            */
+  --tp-surface:  #1a1a1a;  /* cards, tab bar            */
+  --tp-surface2: #111111;  /* inputs, inset rows        */
+  --tp-border:   #2a2a2a;  /* hairline borders          */
+  --tp-accent:   #c8ff00;  /* primary / lime accent     */
+  --tp-text:     #f0f0f0;  /* primary text              */
+  --tp-muted:    #8a8a8a;  /* secondary text            */
+  --tp-dim:      #555555;  /* tertiary / placeholder    */
+  --tp-danger:   #ff4444;  /* destructive / error       */
+  --tp-warn:     #f5b301;  /* saving / syncing          */
+
+  /* ── Typography ── */
+  --tp-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  /* ── Radius ── */
+  --tp-r-sm: 6px;   /* badges            */
+  --tp-r-md: 10px;  /* buttons, inputs   */
+  --tp-r-lg: 16px;  /* cards             */
+
+  /* ── Spacing scale ── */
+  --tp-space-1: 0.5rem;
+  --tp-space-2: 0.75rem;
+  --tp-space-3: 1rem;
+  --tp-space-4: 1.5rem;
+  --tp-space-5: 2rem;
+}

@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TonalPlan — Design System</title>
+  <style>
+    :root {
+      --bg:#0f0f0f; --surface:#1a1a1a; --surface2:#111; --border:#2a2a2a;
+      --accent:#c8ff00; --text:#f0f0f0; --muted:#8a8a8a; --dim:#555;
+      --danger:#ff4444; --warn:#f5b301;
+      --font:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    }
+    *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
+    body{ font-family:var(--font); background:var(--bg); color:var(--text); line-height:1.5; padding:3rem 1.5rem 5rem; }
+    .wrap{ max-width:920px; margin:0 auto; }
+
+    /* header */
+    .ds-logo{ font-size:.72rem; letter-spacing:.22em; text-transform:uppercase; color:var(--accent); font-weight:700; }
+    .ds-h1{ font-size:2.6rem; font-weight:700; letter-spacing:-.02em; margin:.3rem 0 .4rem; }
+    .ds-lede{ color:var(--muted); font-size:1.05rem; max-width:640px; }
+    .ds-rule{ height:3px; background:var(--accent); border:none; border-radius:2px; margin:1.5rem 0 0; opacity:.9; }
+
+    /* section scaffold */
+    section{ margin-top:3.5rem; }
+    .ds-eyebrow{ font-size:.72rem; letter-spacing:.16em; text-transform:uppercase; color:var(--accent); font-weight:700; margin-bottom:.35rem; }
+    .ds-title{ font-size:1.4rem; font-weight:700; letter-spacing:-.01em; margin-bottom:.35rem; }
+    .ds-note{ color:var(--muted); font-size:.9rem; margin-bottom:1.25rem; }
+    .panel{ background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1.75rem; }
+
+    /* colors */
+    .sw-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:1rem; }
+    .sw{ border:1px solid var(--border); border-radius:12px; overflow:hidden; background:var(--surface2); }
+    .sw-chip{ height:76px; }
+    .sw-meta{ padding:.6rem .7rem; }
+    .sw-name{ font-size:.82rem; font-weight:600; }
+    .sw-hex{ font-size:.72rem; color:var(--muted); font-family:ui-monospace,Menlo,monospace; margin-top:.15rem; }
+
+    /* type */
+    .type-row{ display:flex; align-items:baseline; gap:1.25rem; padding:.7rem 0; border-bottom:1px solid var(--border); }
+    .type-row:last-child{ border-bottom:none; }
+    .type-tag{ width:120px; flex-shrink:0; font-size:.72rem; color:var(--dim); font-family:ui-monospace,Menlo,monospace; }
+    .t-logo{ font-size:.72rem; letter-spacing:.22em; text-transform:uppercase; color:var(--accent); font-weight:700; }
+    .t-h1{ font-size:2rem; font-weight:700; letter-spacing:-.02em; }
+    .t-h2{ font-size:1.25rem; font-weight:700; }
+    .t-label{ font-size:.75rem; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); }
+    .t-body{ font-size:.95rem; color:#d8d8d8; }
+    .t-small{ font-size:.78rem; color:var(--muted); }
+
+    /* buttons */
+    .row{ display:flex; gap:.75rem; flex-wrap:wrap; align-items:center; }
+    .btn{ padding:.7rem 1.4rem; border-radius:10px; border:none; font-size:.9rem; font-weight:600; cursor:pointer; font-family:var(--font); transition:opacity .15s; }
+    .btn-primary{ background:var(--accent); color:#000; }
+    .btn-ghost{ background:transparent; border:1px solid var(--border); color:var(--muted); }
+    .btn-ghost:hover{ color:var(--text); border-color:#444; }
+    .btn-sm{ padding:.4rem .8rem; font-size:.78rem; }
+    .btn:disabled{ opacity:.4; cursor:not-allowed; }
+
+    /* inputs */
+    .field{ margin-bottom:1rem; }
+    label.lbl{ display:block; font-size:.75rem; color:var(--muted); margin-bottom:.35rem; letter-spacing:.05em; text-transform:uppercase; }
+    input,select{ width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:10px; color:var(--text); font-size:1rem; padding:.65rem .9rem; outline:none; font-family:var(--font); }
+    input:focus,select:focus{ border-color:var(--accent); }
+    input::placeholder{ color:var(--dim); }
+
+    /* tabs */
+    .tabs{ display:inline-flex; gap:.5rem; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:.3rem; }
+    .tab{ padding:.55rem 1.4rem; border-radius:9px; font-size:.85rem; font-weight:500; border:none; background:transparent; color:var(--muted); cursor:pointer; font-family:var(--font); }
+    .tab.active{ background:var(--accent); color:#000; }
+
+    /* badges + status */
+    .badge{ display:inline-block; background:#1e1e1e; border:1px solid var(--border); border-radius:6px; padding:.25rem .55rem; font-size:.72rem; color:#9a9a9a; }
+    .badge.mode{ color:var(--accent); border-color:#34401a; }
+    .badge.saved{ background:#14231a; border-color:#245a2f; color:var(--accent); font-weight:600; }
+    .status{ display:inline-flex; align-items:center; gap:.4rem; font-size:.8rem; color:var(--muted); }
+    .dot{ width:8px; height:8px; border-radius:50%; background:var(--dim); }
+    .dot.synced{ background:var(--accent); box-shadow:0 0 7px var(--accent); }
+    .dot.saving{ background:var(--warn); box-shadow:0 0 6px var(--warn); }
+    .dot.error{ background:var(--danger); box-shadow:0 0 6px var(--danger); }
+
+    /* result display */
+    .result{ background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:1.25rem 1.5rem; max-width:280px; }
+    .result-label{ font-size:.7rem; color:var(--muted); text-transform:uppercase; letter-spacing:.1em; margin-bottom:.3rem; }
+    .result-val{ font-size:2.8rem; font-weight:700; color:var(--accent); letter-spacing:-.03em; line-height:1; }
+    .result-unit{ font-size:.85rem; color:var(--muted); margin-top:.2rem; }
+
+    /* list row */
+    .list-row{ background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:.85rem 1rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+    .lr-name{ font-size:.95rem; font-weight:500; }
+    .lr-mult{ font-size:.85rem; color:var(--accent); font-weight:600; }
+    .lr-count{ font-size:.72rem; color:var(--dim); }
+
+    .stack{ display:flex; flex-direction:column; gap:.75rem; }
+    .cols{ display:grid; grid-template-columns:1fr 1fr; gap:1.25rem; }
+    @media(max-width:640px){ .cols{ grid-template-columns:1fr; } .ds-h1{ font-size:2rem; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+
+    <header>
+      <p class="ds-logo">TonalPlan</p>
+      <h1 class="ds-h1">Design System</h1>
+      <p class="ds-lede">The building blocks behind TonalPlan — a dark, high-contrast system with a single lime accent, generous rounding, and calm hairline borders.</p>
+      <hr class="ds-rule" />
+    </header>
+
+    <!-- COLORS -->
+    <section>
+      <p class="ds-eyebrow">Foundations</p>
+      <h2 class="ds-title">Color</h2>
+      <p class="ds-note">One accent, used sparingly. Everything else is a step on a near-black-to-white ramp.</p>
+      <div class="panel">
+        <div class="sw-grid">
+          <div class="sw"><div class="sw-chip" style="background:#0f0f0f"></div><div class="sw-meta"><div class="sw-name">Background</div><div class="sw-hex">#0F0F0F</div></div></div>
+          <div class="sw"><div class="sw-chip" style="background:#1a1a1a"></div><div class="sw-meta"><div class="sw-name">Surface</div><div class="sw-hex">#1A1A1A</div></div></div>
+          <div class="sw"><div class="sw-chip" style="background:#111"></div><div class="sw-meta"><div class="sw-name">Surface inset</div><div class="sw-hex">#111111</div></div></div>
+          <div class="sw"><div class="sw-chip" style="background:#2a2a2a"></div><div class="sw-meta"><div class="sw-name">Border</div><div class="sw-hex">#2A2A2A</div></div></div>
+          <div class="sw"><div class="sw-chip" style="background:#c8ff00"></div><div class="sw-meta"><div class="sw-name">Accent</div><div class="sw-hex">#C8FF00</div></div></div>
+          <div class="sw"><div class="sw-chip" style="background:#f0f0f0"></div><div class="sw-meta"><div class="sw-name">Text</div><div class="sw-hex">#F0F0F0</div></div></div>
+          <div class="sw"><div class="sw-chip" style="background:#8a8a8a"></div><div class="sw-meta"><div class="sw-name">Muted</div><div class="sw-hex">#8A8A8A</div></div></div>
+          <div class="sw"><div class="sw-chip" style="background:#f5b301"></div><div class="sw-meta"><div class="sw-name">Warn / saving</div><div class="sw-hex">#F5B301</div></div></div>
+          <div class="sw"><div class="sw-chip" style="background:#ff4444"></div><div class="sw-meta"><div class="sw-name">Danger</div><div class="sw-hex">#FF4444</div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TYPE -->
+    <section>
+      <p class="ds-eyebrow">Foundations</p>
+      <h2 class="ds-title">Typography</h2>
+      <p class="ds-note">System font stack. Tight tracking on headings, wide uppercase tracking on labels and the logo.</p>
+      <div class="panel">
+        <div class="type-row"><span class="type-tag">logo / eyebrow</span><span class="t-logo">TONALPLAN</span></div>
+        <div class="type-row"><span class="type-tag">h1</span><span class="t-h1">Weight Converter</span></div>
+        <div class="type-row"><span class="type-tag">h2 / title</span><span class="t-h2">Create a workout</span></div>
+        <div class="type-row"><span class="type-tag">label</span><span class="t-label">Tonal weight (lbs)</span></div>
+        <div class="type-row"><span class="type-tag">body</span><span class="t-body">Convert Tonal digital weight to its free-weight equivalent.</span></div>
+        <div class="type-row"><span class="type-tag">small</span><span class="t-small">From your logged data</span></div>
+      </div>
+    </section>
+
+    <!-- BUTTONS -->
+    <section>
+      <p class="ds-eyebrow">Components</p>
+      <h2 class="ds-title">Buttons</h2>
+      <p class="ds-note">One primary (lime, solid). Everything secondary is a bordered ghost.</p>
+      <div class="panel row">
+        <button class="btn btn-primary">Save workout</button>
+        <button class="btn btn-ghost">Copy for Tonal</button>
+        <button class="btn btn-ghost btn-sm">Show / hide</button>
+        <button class="btn btn-primary" disabled>Disabled</button>
+      </div>
+    </section>
+
+    <!-- INPUTS -->
+    <section>
+      <p class="ds-eyebrow">Components</p>
+      <h2 class="ds-title">Inputs &amp; selects</h2>
+      <p class="ds-note">Inset background, hairline border, lime border on focus.</p>
+      <div class="panel cols">
+        <div>
+          <div class="field"><label class="lbl">Exercise name</label><input type="text" placeholder="e.g. Upright Row" /></div>
+          <div class="field" style="margin:0"><label class="lbl">Tonal weight (lbs)</label><input type="number" placeholder="e.g. 80" /></div>
+        </div>
+        <div>
+          <div class="field"><label class="lbl">Direction</label>
+            <select><option>Tonal → Free weight</option><option>Free weight → Tonal</option></select>
+          </div>
+          <div class="field" style="margin:0"><label class="lbl">Focused</label><input type="text" value="Bench Press" style="border-color:#c8ff00" /></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TABS -->
+    <section>
+      <p class="ds-eyebrow">Components</p>
+      <h2 class="ds-title">Tabs</h2>
+      <p class="ds-note">Pill group; the active tab fills with the accent.</p>
+      <div class="panel"><div class="tabs">
+        <button class="tab active">Convert</button>
+        <button class="tab">My Lifts</button>
+        <button class="tab">Workout</button>
+      </div></div>
+    </section>
+
+    <!-- BADGES + STATUS -->
+    <section>
+      <p class="ds-eyebrow">Components</p>
+      <h2 class="ds-title">Badges &amp; status</h2>
+      <p class="ds-note">Metadata pills and the live sync indicator.</p>
+      <div class="panel stack">
+        <div class="row">
+          <span class="badge mode">eccentric</span>
+          <span class="badge">heavy load</span>
+          <span class="badge">controlled</span>
+          <span class="badge">Handles</span>
+          <span class="badge saved">✓ Saved</span>
+        </div>
+        <div class="row" style="gap:1.5rem">
+          <span class="status"><span class="dot synced"></span>Synced</span>
+          <span class="status"><span class="dot saving"></span>Saving…</span>
+          <span class="status"><span class="dot error"></span>Sync error</span>
+          <span class="status"><span class="dot"></span>Offline</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- CARDS + PATTERNS -->
+    <section>
+      <p class="ds-eyebrow">Components</p>
+      <h2 class="ds-title">Cards &amp; patterns</h2>
+      <p class="ds-note">The result readout and the list row — the two shapes most of the app is built from.</p>
+      <div class="panel cols">
+        <div class="result">
+          <div class="result-label">Free weight equivalent</div>
+          <div class="result-val">78</div>
+          <div class="result-unit">lbs</div>
+        </div>
+        <div class="stack">
+          <div class="list-row"><span class="lr-name">Chest Press</span><span class="lr-mult">×1.30</span><span class="lr-count">2 data points</span></div>
+          <div class="list-row"><span class="lr-name">Bench Press</span><span class="lr-mult">×1.28</span><span class="lr-count">1 data point</span></div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</body>
+</html>
