@@ -42,7 +42,7 @@
 
     /* ── Header ── */
     .header { text-align: center; margin-bottom: 1.25rem; width: 100%; max-width: 620px; }
-    .logo { font-size: 0.7rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); font-weight: 600; margin-bottom: 0.4rem; }
+    .logo { font-size: 0.7rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent); font-weight: 600; margin-bottom: 0.4rem; }
     .header h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.03em; }
     .header p { font-size: 0.88rem; color: var(--muted); margin-top: 0.3rem; }
 
@@ -58,7 +58,7 @@
     .sync-status { display: inline-flex; align-items: center; gap: 0.35rem; color: var(--muted); white-space: nowrap; }
     .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dim); transition: background 0.2s, box-shadow 0.2s; }
     .sync-dot.syncing, .sync-dot.saving { background: #E8A317; box-shadow: 0 0 6px rgba(232,163,23,.5); }
-    .sync-dot.synced { background: var(--accent); box-shadow: 0 0 6px rgba(79,70,229,.45); }
+    .sync-dot.synced { background: #12B886; box-shadow: 0 0 6px rgba(18,184,134,.5); }
     .sync-dot.offline { background: var(--dim); }
     .sync-dot.error { background: var(--danger); box-shadow: 0 0 6px rgba(229,72,77,.45); }
     .signout-btn {
@@ -102,8 +102,8 @@
       background-repeat: no-repeat; background-position: right 0.95rem center; background-size: 12px;
     }
 
-    .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-    .row-2 input { margin-bottom: 0; }
+    .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem; }
+    .row-2 input, .row-2 select { margin-bottom: 0; }
 
     .btn { width: 100%; padding: 0.85rem; border-radius: 13px; border: none; font-size: 0.9rem; font-weight: 600; font-family: inherit; cursor: pointer; transition: filter 0.15s, background 0.15s; }
     .btn-primary { background: var(--accent); color: #fff; }
@@ -114,7 +114,7 @@
     /* ── Convert result ── */
     .result-block { background: var(--tint); border: 1px solid var(--tint-line); border-radius: 16px; padding: 1.25rem 1.5rem; margin-top: 1.25rem; }
     .result-label { font-size: 0.7rem; color: var(--accent-ink); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin-bottom: 0.3rem; }
-    .result-val { font-size: 3rem; font-weight: 700; color: var(--text); letter-spacing: -0.04em; line-height: 1; }
+    .result-val { font-size: 3rem; font-weight: 700; color: var(--accent); letter-spacing: -0.04em; line-height: 1; }
     .result-unit { font-size: 0.85rem; color: var(--muted); margin-top: 0.25rem; }
     .result-meta { display: flex; gap: 0.5rem; margin-top: 0.9rem; flex-wrap: wrap; }
     .badge { background: var(--track); border: none; border-radius: 7px; padding: 0.28rem 0.6rem; font-size: 0.72rem; color: #6f6f6a; }
@@ -211,6 +211,13 @@
     .wo-badge { background: var(--track); border: none; border-radius: 7px; padding: 0.2rem 0.5rem; font-size: 0.7rem; font-weight: 500; color: #6f6f6a; }
     .wo-badge.mode { background: var(--tint); color: var(--accent-ink); }
     .wo-badge.load { color: #6f6f6a; }
+    .wo-badge.mode-chains { background: #F0EAFD; color: #6D28D9; }
+    .wo-badge.mode-eccentric { background: #D7F1EC; color: #0D7A68; }
+    .wo-badge.mode-burnout { background: #FBEBD8; color: #B45309; }
+    .wo-badge.mode-spotter { background: #E4EDFD; color: #1D4ED8; }
+    .wo-section-name.sec-warmup { color: #0D9488; }
+    .wo-section-name.sec-finisher { color: #C2410C; }
+    .wo-section-name.sec-cooldown { color: #1D4ED8; }
     .wo-cue { font-size: 0.78rem; color: #9a9a95; margin-top: 0.5rem; }
 
     .saved-wo { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; background: var(--surface2); border: 1px solid var(--border2); border-radius: 12px; padding: 0.75rem 0.9rem; margin-bottom: 0.55rem; cursor: pointer; }
@@ -1346,7 +1353,7 @@
           const loadTxt = sug
             ? `~${sug} lb <span style="color:var(--dim)">(from your data)</span>`
             : `${it.load} load`;
-          const modeBadge = it.tonalMode ? `<span class="wo-badge mode">${esc(it.tonalMode)}</span>` : '';
+          const modeBadge = it.tonalMode ? `<span class="wo-badge mode mode-${esc(it.tonalMode)}">${esc(it.tonalMode)}</span>` : '';
           const swapBtn = replaceMode ? `<button class="wo-swap-btn" onclick="beginSwap(${si},${ii})" title="Replace this move">⇄</button>` : '';
           const swapPanel = (swapTarget && swapTarget.si === si && swapTarget.ii === ii) ? renderSwapPanel(si, ii) : '';
           return `<div class="wo-item">
@@ -1361,7 +1368,7 @@
         }).join('');
         const meta = sec.type === 'block' && sec.items[0] ? `rest ${sec.items[0].restSec || 90}s` : '';
         return `<div class="wo-section">
-          <div class="wo-section-name"><span>${esc(sec.name)}</span><span class="wo-section-meta">${meta}</span></div>
+          <div class="wo-section-name sec-${esc(sec.type)}"><span>${esc(sec.name)}</span><span class="wo-section-meta">${meta}</span></div>
           ${itemsHtml}
         </div>`;
       }).join('');
