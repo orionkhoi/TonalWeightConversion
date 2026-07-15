@@ -1,0 +1,80 @@
+<!-- ===== TonalPlan brief &mdash; paste this whole block anywhere ===== -->
+<section class="tp-brief">
+  <style>
+    .tp-brief { --tp-bg:#0f0f0f; --tp-surface:#1a1a1a; --tp-border:#2a2a2a; --tp-accent:#c8ff00; --tp-text:#f0f0f0; --tp-muted:#8a8a8a; --tp-dim:#5a5a5a;
+      max-width:760px; margin:0 auto; padding:2.5rem; box-sizing:border-box;
+      background:var(--tp-bg); color:var(--tp-text); border:1px solid var(--tp-border); border-radius:18px;
+      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; line-height:1.6; }
+    .tp-brief * { box-sizing:border-box; }
+    .tp-brief .tp-logo { font-size:.7rem; letter-spacing:.22em; text-transform:uppercase; color:var(--tp-accent); font-weight:700; margin:0 0 .4rem; }
+    .tp-brief h1 { font-size:2.4rem; font-weight:700; letter-spacing:-.02em; margin:0 0 .35rem; color:#fff; }
+    .tp-brief .tp-tag { font-size:1.05rem; color:var(--tp-muted); margin:0 0 1.25rem; }
+    .tp-brief .tp-rule { height:3px; background:var(--tp-accent); border:none; border-radius:2px; margin:0 0 1.75rem; opacity:.9; }
+    .tp-brief h2 { font-size:.78rem; letter-spacing:.14em; text-transform:uppercase; color:var(--tp-accent); margin:1.9rem 0 .8rem; font-weight:700; }
+    .tp-brief p { margin:0 0 1rem; color:#d8d8d8; font-size:.96rem; }
+    .tp-brief ul { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:.7rem; }
+    .tp-brief li { background:var(--tp-surface); border:1px solid var(--tp-border); border-radius:12px; padding:.85rem 1rem; font-size:.92rem; color:#cfcfcf; }
+    .tp-brief li b { color:#fff; }
+    .tp-brief table { width:100%; border-collapse:collapse; margin-top:.25rem; font-size:.9rem; }
+    .tp-brief td { padding:.7rem .9rem; border-bottom:1px solid var(--tp-border); vertical-align:top; }
+    .tp-brief tr:last-child td { border-bottom:none; }
+    .tp-brief td.k { color:var(--tp-accent); font-weight:600; white-space:nowrap; width:34%; }
+    .tp-brief td.v { color:#d0d0d0; }
+    .tp-brief .tp-foot { margin-top:2rem; padding-top:1rem; border-top:1px solid var(--tp-border); font-size:.8rem; color:var(--tp-dim); }
+    .tp-brief .tp-foot a { color:var(--tp-muted); text-decoration:none; }
+    @media (max-width:560px){ .tp-brief{ padding:1.5rem; } .tp-brief h1{ font-size:1.8rem; } }
+  </style>
+
+  <p class="tp-logo">TonalPlan</p>
+  <h1>TonalPlan</h1>
+  <p class="tp-tag">A weight converter and AI-style workout planner for the Tonal home gym.</p>
+  <hr class="tp-rule" />
+
+  <h2>Overview</h2>
+  <p>
+    TonalPlan is a web app for people who train on a Tonal. It solves two problems: Tonal's digital
+    resistance <em>feels</em> heavier than the same number in free weights, and building effective,
+    equipment-appropriate workouts is tedious. TonalPlan converts weights both ways, learns each user's
+    personal conversion from their own logged lifts, and generates complete, Tonal-native workouts from a
+    plain-language goal &mdash; drawing on the full 315-movement Tonal catalog.
+  </p>
+
+  <h2>What it does</h2>
+  <ul>
+    <li><b>Weight converter.</b> Converts Tonal digital weight &harr; free-weight equivalent in both directions, using a research-based formula or the user's own data when available.</li>
+    <li><b>My Lifts.</b> Log what a Tonal weight felt equivalent to in free weights; the app averages entries into a personal multiplier per exercise that sharpens future conversions.</li>
+    <li><b>Goal-driven Workout Creator.</b> Describe a goal (&ldquo;more distance on my golf drive,&rdquo; &ldquo;stronger chest&rdquo;) and get a full warmup &rarr; blocks &rarr; finisher &rarr; cooldown session using only moves your equipment supports, with suggested starting weights from your own history.</li>
+    <li><b>Movement Library.</b> The complete 315-move Tonal catalog, searchable by name, muscle, movement pattern, or accessory, with an &ldquo;only my equipment&rdquo; filter.</li>
+    <li><b>Edit &amp; personalize.</b> Rename workouts, edit descriptions, and swap any movement for a similar-muscle alternative; each generation varies so plans stay fresh.</li>
+    <li><b>Cross-device accounts.</b> Email/password sign-in with data synced across phone and laptop, and a live sync indicator.</li>
+    <li><b>Export to Tonal.</b> &ldquo;Copy for Tonal&rdquo; produces a clean build sheet to recreate any workout in Tonal's own Custom Workouts feature.</li>
+  </ul>
+
+  <h2>How it works</h2>
+  <p>
+    The workout engine never invents exercises: it filters the curated movement database to the user's owned
+    accessories, scores each candidate against the words in their goal (muscles, patterns, and training
+    intent), and assembles a balanced session &mdash; capping repetition so a workout isn't three near-identical
+    presses. Personal conversion data feeds both the converter and the suggested loads.
+  </p>
+
+  <h2>At a glance</h2>
+  <table>
+    <tr><td class="k">Platform</td><td class="v">Responsive web app (phone &amp; desktop)</td></tr>
+    <tr><td class="k">Front end</td><td class="v">Single-page vanilla HTML / CSS / JavaScript</td></tr>
+    <tr><td class="k">Back end</td><td class="v">Supabase &mdash; Postgres, authentication, row-level security</td></tr>
+    <tr><td class="k">Hosting</td><td class="v">Vercel, auto-deployed from GitHub</td></tr>
+    <tr><td class="k">Catalog</td><td class="v">315 Tonal movements with muscle, region &amp; accessory tags</td></tr>
+    <tr><td class="k">Privacy</td><td class="v">Each account can only read and write its own data</td></tr>
+  </table>
+
+  <h2>Status</h2>
+  <p>
+    Live and in active development. Converter, personal lift log, accounts and sync, the full movement
+    library, and the workout creator with editing and export are all built and working. Next up is deeper
+    per-movement customization (sets, reps, and load).
+  </p>
+
+  <p class="tp-foot"><a href="https://github.com/orionkhoi/TonalWeightConversion">github.com/orionkhoi/TonalWeightConversion</a></p>
+</section>
+<!-- ===== end TonalPlan brief ===== -->
